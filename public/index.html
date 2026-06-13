@@ -1,486 +1,396 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VelocityMark - Global Multi-Vendor Marketplace</title>
-    <meta name="description" content="The world's leading marketplace. Buy and sell anything globally. Secure checkout, trusted sellers.">
-    <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/png" href="favicon.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VelocityMark — Global Marketplace</title>
+  <meta name="description" content="Buy from verified sellers worldwide. Sell your products globally. Secure checkout, instant delivery tracking.">
+  <meta name="keywords" content="marketplace, online shopping, sell online, global marketplace, velocitymark">
+  <meta property="og:title" content="VelocityMark — Global Marketplace">
+  <meta property="og:description" content="Buy from verified sellers worldwide. Sell your products globally.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://velocitymark.onrender.com">
+  <meta property="og:image" content="https://velocitymark.onrender.com/favicon.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/png" href="favicon.png">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="container">
-            <div class="nav-brand">
-                <img src="logo.png" alt="VelocityMark" class="nav-logo">
-            </div>
-            <ul class="nav-menu" id="navMenu">
-                <li><a href="#home" class="nav-link">Home</a></li>
-                <li><a href="#shop" class="nav-link">Shop</a></li>
-                <li><a href="#vendors" class="nav-link">Sellers</a></li>
-                <li><button class="btn btn-small" onclick="showModal('loginModal')">Become a Seller</button></li>
-                <li class="cart-icon" onclick="toggleCart()">
-                    🛒 <span id="cartCount" class="cart-badge">0</span>
-                </li>
-            </ul>
-        </div>
-    </nav>
 
-    <!-- Hero -->
-    <section id="home" class="hero">
-        <div class="container">
-            <h1>Welcome to VelocityMark Marketplace</h1>
-            <p>Buy from trusted sellers worldwide. Sell your products globally.</p>
-            <div class="hero-buttons">
-                <button class="btn btn-primary btn-large" onclick="scrollTo('#shop')">Start Shopping</button>
-                <button class="btn btn-secondary btn-large" onclick="showModal('loginModal')">Become a Seller</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- Sponsored / Promoted Products -->
-    <section id="sponsored" class="shop" style="padding-bottom:0;display:none;">
-        <div class="container">
-            <h2 style="display:flex;align-items:center;gap:.5rem;">🚀 Sponsored <span style="background:#fde68a;color:#92400e;font-size:.7rem;padding:2px 8px;border-radius:10px;font-weight:700;">PROMOTED</span></h2>
-            <div class="products-grid" id="sponsoredGrid"></div>
-        </div>
-    </section>
-
-    <!-- Shop -->
-    <section id="shop" class="shop">
-        <div class="container">
-            <h2>Browse Products</h2>
-            <div class="filters">
-                <input type="text" id="searchInput" placeholder="Search products..." class="search-box" onkeyup="searchProducts()">
-                <button class="filter-btn active" onclick="filterCategory('all')">All</button>
-                <button class="filter-btn" onclick="filterCategory('electronics')">Electronics</button>
-                <button class="filter-btn" onclick="filterCategory('fashion')">Fashion</button>
-                <button class="filter-btn" onclick="filterCategory('home')">Home</button>
-                <button class="filter-btn" onclick="filterCategory('sports')">Sports</button>
-            </div>
-            <div class="products-grid" id="productsGrid">
-                <!-- Products loaded here -->
-            </div>
-        </div>
-    </section>
-
-    <!-- Sellers Section -->
-    <section id="vendors" class="vendors">
-        <div class="container">
-            <h2>Featured Sellers</h2>
-            <p class="section-subtitle">Premium merchants trusted by thousands</p>
-            <div class="vendors-grid" id="vendorsGrid">
-                <!-- Vendors loaded here -->
-            </div>
-        </div>
-    </section>
-
-    <!-- Seller Login/Registration Modal -->
-    <div class="modal" id="loginModal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="closeModal('loginModal')">✕</button>
-            <h2 id="authTitle">Seller Account</h2>
-            
-            <!-- Login Form -->
-            <div id="loginForm">
-                <h3>Login to Your Store</h3>
-                <form onsubmit="vendorLogin(event)">
-                    <input type="email" placeholder="Email" id="loginEmail" required>
-                    <input type="password" placeholder="Password" id="loginPassword" required>
-                    <button type="submit" class="btn btn-primary btn-full">Login</button>
-                </form>
-                <p style="text-align:center; margin-top: 1rem;">
-                    Don't have an account? <a href="#" onclick="switchToRegister()">Register here</a>
-                </p>
-            </div>
-
-            <!-- Register Form -->
-            <div id="registerForm" style="display:none;">
-                <h3>Create Your Seller Account</h3>
-                <form onsubmit="vendorRegister(event)">
-                    <input type="text" placeholder="Full Name" id="regName" required>
-                    <input type="email" placeholder="Email" id="regEmail" required>
-                    <input type="password" placeholder="Password" id="regPassword" required>
-                    <input type="text" placeholder="Store Name" id="storeName" required>
-                    <textarea placeholder="Store Description" id="storeDesc"></textarea>
-                    <select id="storeCategory" required>
-                        <option value="">Select Category</option>
-                        <option value="electronics">Electronics</option>
-                        <option value="fashion">Fashion</option>
-                        <option value="home">Home & Garden</option>
-                        <option value="sports">Sports</option>
-                        <option value="other">Other</option>
-                    </select>
-                    <button type="submit" class="btn btn-primary btn-full">Create Account</button>
-                </form>
-                <p style="text-align:center; margin-top: 1rem;">
-                    Already have an account? <a href="#" onclick="switchToLogin()">Login here</a>
-                </p>
-            </div>
-        </div>
+  <nav class="navbar" id="navbar">
+    <div class="container nav-inner">
+      <a href="/" class="nav-brand">
+        <img src="logo.png" alt="VelocityMark" class="nav-logo">
+      </a>
+      <div class="nav-search-wrap">
+        <input type="text" id="navSearch" placeholder="Search products, sellers..." autocomplete="off" oninput="handleNavSearch(this.value)">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <div class="search-dropdown" id="searchDropdown"></div>
+      </div>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="#shop" class="nav-link">Shop</a></li>
+        <li><a href="#sellers" class="nav-link">Sellers</a></li>
+        <li>
+          <button class="btn-icon" onclick="toggleWishlistPanel()" title="Wishlist">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span class="badge" id="wishlistCount">0</span>
+          </button>
+        </li>
+        <li>
+          <button class="btn-icon" onclick="toggleCart()" title="Cart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            <span class="badge" id="cartCount">0</span>
+          </button>
+        </li>
+        <li id="authNavItem">
+          <button class="btn btn-primary btn-sm" onclick="showModal('loginModal')">Sell on VelocityMark</button>
+        </li>
+      </ul>
+      <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
+  </nav>
 
-    <!-- Vendor Dashboard Modal -->
-    <div class="modal" id="dashboardModal">
-        <div class="modal-content dashboard-content">
-            <button class="close-btn" onclick="closeModal('dashboardModal')">✕</button>
-            <h2>⚡ Seller Dashboard</h2>
-            
-            <div class="dashboard-tabs">
-                <button class="tab-btn active" onclick="switchTab('stats'); loadAnalytics();">📊 Overview</button>
-                <button class="tab-btn" onclick="switchTab('products'); loadMyProducts();">📦 Products</button>
-                <button class="tab-btn" onclick="switchTab('upload');">➕ Add Product</button>
-                <button class="tab-btn" onclick="switchTab('stock'); loadStockOverview();">📋 Stock</button>
-                <button class="tab-btn" onclick="switchTab('orders'); loadMyOrders();">🧾 Orders</button>
-                <button class="tab-btn" onclick="switchTab('coupons'); loadCoupons();">🏷️ Discounts</button>
-                <button class="tab-btn" onclick="switchTab('reviews'); loadMyReviews();">⭐ Reviews</button>
-                <button class="tab-btn" onclick="switchTab('payouts'); loadPayouts();">💰 Payouts</button>
-                <button class="tab-btn" onclick="switchTab('notifications'); loadNotifications();">🔔 Alerts</button>
-                <button class="tab-btn premium-tab" onclick="switchTab('reports'); loadAdvancedReports();">👑 Reports</button>
-                <button class="tab-btn premium-tab" onclick="switchTab('promote'); loadPromote();">🚀 Promote</button>
-                <button class="tab-btn" onclick="switchTab('profile');">🏪 Profile</button>
-            </div>
-
-            <!-- Overview / Stats Tab -->
-            <div id="stats" class="tab-content">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3 id="productCount">0</h3>
-                        <p>Products Listed</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3 id="orderCount">0</h3>
-                        <p>Total Orders</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3 id="totalRevenue">$0</h3>
-                        <p>Total Earnings</p>
-                    </div>
-                </div>
-                <!-- Order status breakdown -->
-                <div class="order-breakdown" id="orderBreakdown" style="margin-top:1rem;"></div>
-                <!-- Sales chart (last 7 days) -->
-                <div class="chart-section" style="margin-top:1.5rem;">
-                    <h4 style="margin-bottom:0.75rem;">Sales Last 7 Days</h4>
-                    <div class="bar-chart" id="salesChart"></div>
-                </div>
-                <!-- Top products -->
-                <div style="margin-top:1.5rem;">
-                    <h4 style="margin-bottom:0.75rem;">🏆 Top Products</h4>
-                    <div id="topProductsList"></div>
-                </div>
-                <!-- Low stock alert -->
-                <div id="lowStockAlert" style="margin-top:1.5rem;"></div>
-            </div>
-
-            <!-- Products Tab -->
-            <div id="products" class="tab-content" style="display:none;">
-                <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
-                    <input type="text" placeholder="Search your products..." id="myProductSearch" oninput="filterMyProducts()" class="search-box" style="flex:1;">
-                    <select id="myProductCatFilter" onchange="filterMyProducts()" style="padding:0.5rem; border-radius:6px; border:1px solid #ddd;">
-                        <option value="">All Categories</option>
-                        <option value="electronics">Electronics</option>
-                        <option value="fashion">Fashion</option>
-                        <option value="home">Home</option>
-                        <option value="sports">Sports</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <div id="myProductsList"></div>
-            </div>
-
-            <!-- Upload / Add Product Tab -->
-            <div id="upload" class="tab-content" style="display:none;">
-                <form onsubmit="uploadProduct(event)" id="uploadForm">
-                    <input type="text" placeholder="Product Name *" id="prodName" required>
-                    <textarea placeholder="Description" id="prodDesc" rows="3"></textarea>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
-                        <input type="number" placeholder="Price ($) *" id="prodPrice" step="0.01" required>
-                        <input type="number" placeholder="Original/Compare Price ($)" id="prodOriginal" step="0.01">
-                    </div>
-                    <select id="prodCategory" required>
-                        <option value="">Select Category *</option>
-                        <option value="electronics">Electronics</option>
-                        <option value="fashion">Fashion</option>
-                        <option value="home">Home & Garden</option>
-                        <option value="sports">Sports</option>
-                        <option value="other">Other</option>
-                    </select>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
-                        <input type="number" placeholder="Stock Quantity" id="prodStock" value="999">
-                        <input type="text" placeholder="Emoji icon (e.g. 📱)" id="prodImage" value="📦">
-                    </div>
-                    <input type="text" placeholder="Tags (comma separated: e.g. summer, sale)" id="prodTags">
-                    <button type="submit" class="btn btn-primary btn-full">🚀 Upload Product</button>
-                </form>
-            </div>
-
-            <!-- Stock Management Tab -->
-            <div id="stock" class="tab-content" style="display:none;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-                    <h4>📋 Inventory & Stock Control</h4>
-                    <div style="display:flex;gap:.5rem;">
-                        <label class="btn btn-small" style="cursor:pointer;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">
-                            📥 Import CSV <input type="file" accept=".csv" id="csvImportInput" style="display:none;" onchange="handleCSVImport(this)">
-                        </label>
-                    </div>
-                </div>
-                <div id="stockOverviewList"></div>
-
-                <!-- Stock Adjustment Panel -->
-                <div id="stockAdjustPanel" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:1rem;margin-top:1rem;">
-                    <h4 style="margin-bottom:.75rem;">⚙️ Adjust Stock</h4>
-                    <input type="hidden" id="adjustProductId">
-                    <p id="adjustProductName" style="font-weight:600;margin-bottom:.75rem;"></p>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem;">
-                        <div>
-                            <label style="font-size:.8rem;color:#666;">Action</label>
-                            <select id="adjustType" style="width:100%;padding:.5rem;border-radius:6px;border:1px solid #ddd;margin-top:3px;">
-                                <option value="opening">Set Opening Stock</option>
-                                <option value="add">Add Stock (Restock)</option>
-                                <option value="remove">Remove Stock (Damage/Loss)</option>
-                                <option value="adjustment">Manual Adjustment (set exact)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-size:.8rem;color:#666;">Quantity</label>
-                            <input type="number" id="adjustQty" min="0" placeholder="0" style="width:100%;padding:.5rem;border-radius:6px;border:1px solid #ddd;margin-top:3px;box-sizing:border-box;">
-                        </div>
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem;">
-                        <div>
-                            <label style="font-size:.8rem;color:#666;">Low Stock Alert Threshold</label>
-                            <input type="number" id="adjustThreshold" min="0" placeholder="5" style="width:100%;padding:.5rem;border-radius:6px;border:1px solid #ddd;margin-top:3px;box-sizing:border-box;">
-                        </div>
-                        <div>
-                            <label style="font-size:.8rem;color:#666;">SKU (optional)</label>
-                            <input type="text" id="adjustSku" placeholder="e.g. SKU-001" style="width:100%;padding:.5rem;border-radius:6px;border:1px solid #ddd;margin-top:3px;box-sizing:border-box;">
-                        </div>
-                    </div>
-                    <input type="text" id="adjustNote" placeholder="Note (e.g. New shipment from supplier)" style="width:100%;padding:.5rem;border-radius:6px;border:1px solid #ddd;margin-bottom:.75rem;box-sizing:border-box;">
-                    <div style="display:flex;gap:.5rem;">
-                        <button class="btn btn-primary" onclick="submitStockAdjust()">✅ Save</button>
-                        <button class="btn btn-secondary" onclick="document.getElementById('stockAdjustPanel').style.display='none'">Cancel</button>
-                        <button class="btn btn-small" style="margin-left:auto;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;" onclick="loadStockHistory()">📜 View History</button>
-                    </div>
-                </div>
-                <div id="stockHistoryPanel" style="display:none;margin-top:1rem;">
-                    <h5 style="margin-bottom:.5rem;">Stock History</h5>
-                    <div id="stockHistoryList"></div>
-                </div>
-            </div>
-
-            <!-- Discount Codes Tab -->
-            <div id="coupons" class="tab-content" style="display:none;">
-                <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:1rem;margin-bottom:1rem;">
-                    <h4 style="margin-bottom:.75rem;color:#166534;">➕ Create Discount Code</h4>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
-                        <input type="text" placeholder="Code (e.g. SAVE20)" id="couponCode" style="padding:.6rem;border-radius:6px;border:1px solid #ddd;text-transform:uppercase;">
-                        <select id="couponType" style="padding:.6rem;border-radius:6px;border:1px solid #ddd;">
-                            <option value="percent">% Percentage Off</option>
-                            <option value="fixed">$ Fixed Amount Off</option>
-                        </select>
-                        <input type="number" placeholder="Value (e.g. 20 for 20% or $20)" id="couponValue" min="0" step="0.01" style="padding:.6rem;border-radius:6px;border:1px solid #ddd;">
-                        <input type="number" placeholder="Min order amount ($0 = none)" id="couponMinOrder" min="0" step="0.01" style="padding:.6rem;border-radius:6px;border:1px solid #ddd;">
-                        <input type="number" placeholder="Max uses (0 = unlimited)" id="couponMaxUses" min="0" style="padding:.6rem;border-radius:6px;border:1px solid #ddd;">
-                        <input type="date" id="couponExpiry" style="padding:.6rem;border-radius:6px;border:1px solid #ddd;">
-                    </div>
-                    <button class="btn btn-primary" style="margin-top:.75rem;" onclick="createCoupon()">Create Code</button>
-                </div>
-                <div id="couponList"></div>
-            </div>
-
-            <!-- Notifications Tab -->
-            <div id="notifications" class="tab-content" style="display:none;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
-                    <h4>🔔 Your Alerts</h4>
-                    <button class="btn btn-small" onclick="markAllRead()">Mark all read</button>
-                </div>
-                <div id="notificationsList"></div>
-            </div>
-
-            <!-- PREMIUM: Advanced Reports Tab -->
-            <div id="reports" class="tab-content" style="display:none;">
-                <div id="premiumGateReports"></div>
-                <div id="reportsContent" style="display:none;">
-                    <div style="display:flex;gap:.5rem;margin-bottom:1rem;align-items:center;">
-                        <label style="font-size:.85rem;color:#555;">Period:</label>
-                        <select id="reportPeriod" onchange="loadAdvancedReports()" style="padding:.4rem .75rem;border-radius:6px;border:1px solid #ddd;">
-                            <option value="7">Last 7 days</option>
-                            <option value="30" selected>Last 30 days</option>
-                            <option value="90">Last 90 days</option>
-                        </select>
-                        <button class="btn btn-small" style="margin-left:auto;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;" onclick="exportReportCSV()">⬇ Export CSV</button>
-                    </div>
-                    <div class="stats-grid" id="reportStats"></div>
-                    <div style="margin-top:1.5rem;">
-                        <h5 style="margin-bottom:.75rem;">📈 Revenue by Day</h5>
-                        <div class="bar-chart" id="reportChart" style="height:120px;"></div>
-                    </div>
-                    <div style="margin-top:1.5rem;">
-                        <h5 style="margin-bottom:.75rem;">🗂 Revenue by Category</h5>
-                        <div id="reportByCategory"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PREMIUM: Promote Listings Tab -->
-            <div id="promote" class="tab-content" style="display:none;">
-                <div id="premiumGatePromote"></div>
-                <div id="promoteContent" style="display:none;">
-                    <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:1rem;margin-bottom:1rem;">
-                        <p style="font-size:.875rem;color:#78350f;">🚀 Promoted products appear at the top of the marketplace with a <strong>Sponsored</strong> badge, getting up to 5x more visibility.</p>
-                    </div>
-                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:1rem;margin-bottom:1rem;">
-                        <h4 style="margin-bottom:.75rem;">Promote a Product</h4>
-                        <select id="promoteProductSelect" style="width:100%;padding:.6rem;border-radius:6px;border:1px solid #ddd;margin-bottom:.75rem;"></select>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem;">
-                            <div>
-                                <label style="font-size:.8rem;color:#666;">Duration (days)</label>
-                                <select id="promoteDays" style="width:100%;padding:.5rem;border-radius:6px;border:1px solid #ddd;margin-top:3px;">
-                                    <option value="7">7 days</option>
-                                    <option value="14">14 days</option>
-                                    <option value="30">30 days</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="font-size:.8rem;color:#666;">Budget ($)</label>
-                                <input type="number" id="promoteBudget" placeholder="e.g. 50" min="1" style="width:100%;padding:.5rem;border-radius:6px;border:1px solid #ddd;margin-top:3px;box-sizing:border-box;">
-                            </div>
-                        </div>
-                        <button class="btn btn-primary" onclick="submitPromotion()">🚀 Promote Now</button>
-                    </div>
-                    <h4 style="margin-bottom:.75rem;">Currently Sponsored Products</h4>
-                    <div id="sponsoredList"></div>
-                </div>
-            </div>
-
-            <!-- Edit Product Modal (inline) -->
-            <div id="editProductPanel" style="display:none; background:#f8f9fa; border-radius:10px; padding:1rem; margin-bottom:1rem;">
-                <h4 style="margin-bottom:0.75rem;">✏️ Edit Product</h4>
-                <input type="hidden" id="editProdId">
-                <input type="text" placeholder="Product Name" id="editProdName">
-                <textarea placeholder="Description" id="editProdDesc" rows="2"></textarea>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
-                    <input type="number" placeholder="Price ($)" id="editProdPrice" step="0.01">
-                    <input type="number" placeholder="Stock" id="editProdStock">
-                </div>
-                <select id="editProdCategory">
-                    <option value="electronics">Electronics</option>
-                    <option value="fashion">Fashion</option>
-                    <option value="home">Home</option>
-                    <option value="sports">Sports</option>
-                    <option value="other">Other</option>
-                </select>
-                <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
-                    <button class="btn btn-primary" onclick="saveProductEdit()">Save Changes</button>
-                    <button class="btn btn-secondary" onclick="document.getElementById('editProductPanel').style.display='none'">Cancel</button>
-                </div>
-            </div>
-
-            <!-- Orders Tab -->
-            <div id="orders" class="tab-content" style="display:none;">
-                <div style="margin-bottom:0.75rem;">
-                    <select id="orderStatusFilter" onchange="filterOrders()" style="padding:0.5rem; border-radius:6px; border:1px solid #ddd;">
-                        <option value="">All Orders</option>
-                        <option value="pending">Pending</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                    </select>
-                </div>
-                <div id="myOrdersList"></div>
-            </div>
-
-            <!-- Reviews Tab -->
-            <div id="reviews" class="tab-content" style="display:none;">
-                <div id="myReviewsList"></div>
-            </div>
-
-            <!-- Payouts Tab -->
-            <div id="payouts" class="tab-content" style="display:none;">
-                <div class="stats-grid" id="payoutStats"></div>
-                <div style="margin-top:1.5rem;">
-                    <h4 style="margin-bottom:0.75rem;">💸 Recent Payouts (Delivered Orders)</h4>
-                    <div id="payoutHistory"></div>
-                </div>
-            </div>
-
-            <!-- Store Profile Tab -->
-            <div id="profile" class="tab-content" style="display:none;">
-                <form onsubmit="saveStoreProfile(event)">
-                    <input type="text" placeholder="Store Name" id="profileStoreName">
-                    <textarea placeholder="Store Description" id="profileStoreDesc" rows="3"></textarea>
-                    <select id="profileCategory">
-                        <option value="">Category</option>
-                        <option value="electronics">Electronics</option>
-                        <option value="fashion">Fashion</option>
-                        <option value="home">Home & Garden</option>
-                        <option value="sports">Sports</option>
-                        <option value="other">Other</option>
-                    </select>
-                    <input type="text" placeholder="Store Emoji Icon (e.g. 🏪)" id="profileImage">
-                    <input type="email" placeholder="Public Contact Email" id="profileContactEmail">
-                    <input type="text" placeholder="Phone Number" id="profileContactPhone">
-                    <input type="text" placeholder="Location (City, Country)" id="profileLocation">
-                    <input type="url" placeholder="Website URL" id="profileWebsite">
-                    <button type="submit" class="btn btn-primary btn-full">💾 Save Profile</button>
-                </form>
-                <div style="margin-top:1rem; padding:1rem; background:#f0f7ff; border-radius:8px; font-size:0.875rem; color:#555;">
-                    💡 Your store profile is visible to buyers who click "View Store" on your products.
-                </div>
-            </div>
-        </div>
+  <section id="home" class="hero">
+    <div class="hero-bg"><div class="hero-orb orb-1"></div><div class="hero-orb orb-2"></div></div>
+    <div class="container hero-inner">
+      <div class="hero-badge">🌍 Trusted by 50,000+ buyers globally</div>
+      <h1 class="hero-title">The marketplace that<br><span class="gradient-text">moves at your speed</span></h1>
+      <p class="hero-sub">Buy from verified sellers worldwide. List your products in minutes. Every transaction protected.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary btn-lg" onclick="document.getElementById('shop').scrollIntoView({behavior:'smooth'})">Start Shopping</button>
+        <button class="btn btn-ghost btn-lg" onclick="showModal('loginModal')">Become a Seller →</button>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><span class="stat-num" id="statProducts">—</span><span class="stat-label">Products</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><span class="stat-num" id="statSellers">—</span><span class="stat-label">Sellers</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><span class="stat-num">24/7</span><span class="stat-label">Support</span></div>
+      </div>
     </div>
+  </section>
 
-    <!-- Shopping Cart Sidebar -->
-    <div class="cart-sidebar" id="cartSidebar">
-        <div class="cart-header">
-            <h3>Shopping Cart</h3>
-            <button class="close-btn" onclick="toggleCart()">✕</button>
+  <div class="trust-bar">
+    <div class="container trust-inner">
+      <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Secure Checkout</span></div>
+      <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span>Fast Delivery</span></div>
+      <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg><span>Easy Returns</span></div>
+      <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>24/7 Order Tracking</span></div>
+    </div>
+  </div>
+
+  <section id="sponsored" class="section" style="display:none;">
+    <div class="container">
+      <div class="section-header"><h2>Sponsored <span class="tag-promoted">PROMOTED</span></h2></div>
+      <div class="products-grid" id="sponsoredGrid"></div>
+    </div>
+  </section>
+
+  <section id="shop" class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Browse Products</h2>
+        <p class="section-sub">Curated picks from verified global sellers</p>
+      </div>
+      <div class="shop-toolbar">
+        <div class="category-pills" id="categoryPills">
+          <button class="pill active" onclick="filterCategory('all',this)">All</button>
+          <button class="pill" onclick="filterCategory('electronics',this)">Electronics</button>
+          <button class="pill" onclick="filterCategory('fashion',this)">Fashion</button>
+          <button class="pill" onclick="filterCategory('home',this)">Home</button>
+          <button class="pill" onclick="filterCategory('sports',this)">Sports</button>
+          <button class="pill" onclick="filterCategory('other',this)">Other</button>
         </div>
-        <div class="cart-items" id="cartItems">
-            <p class="empty-cart">Your cart is empty</p>
+        <select id="sortSelect" class="filter-select" onchange="sortProducts(this.value)">
+          <option value="default">Featured</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="rating">Top Rated</option>
+          <option value="newest">Newest</option>
+        </select>
+      </div>
+      <div id="productsGrid" class="products-grid">
+        <div class="skeleton-grid" id="productSkeletons">
+          <div class="product-skeleton"></div><div class="product-skeleton"></div>
+          <div class="product-skeleton"></div><div class="product-skeleton"></div>
+          <div class="product-skeleton"></div><div class="product-skeleton"></div>
         </div>
-        <div class="cart-footer">
-            <div class="cart-total">
-                <span>Total:</span>
-                <span id="cartTotal">$0.00</span>
+      </div>
+      <div id="loadMoreWrap" class="load-more-wrap" style="display:none;">
+        <button class="btn btn-outline" onclick="loadMoreProducts()">Load More Products</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="sellers" class="section section-alt">
+    <div class="container">
+      <div class="section-header">
+        <h2>Featured Sellers</h2>
+        <p class="section-sub">Premium merchants trusted by thousands of buyers</p>
+      </div>
+      <div class="sellers-grid" id="vendorsGrid"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-header"><h2>How VelocityMark Works</h2></div>
+      <div class="steps-grid">
+        <div class="step-card"><div class="step-num">01</div><h3>Browse &amp; Discover</h3><p>Search thousands of products from verified global sellers. Filter by category, price, and rating.</p></div>
+        <div class="step-card"><div class="step-num">02</div><h3>Secure Checkout</h3><p>Protected payment via Stripe. Your details are encrypted and never shared with sellers.</p></div>
+        <div class="step-card"><div class="step-num">03</div><h3>Track Your Order</h3><p>Get a live tracking link the moment your order ships. Know exactly where your package is.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section cta-section">
+    <div class="container cta-inner">
+      <h2>Ready to start selling?</h2>
+      <p>Join thousands of sellers already growing their business on VelocityMark. Free to start.</p>
+      <button class="btn btn-primary btn-lg" onclick="showModal('loginModal')">Create Your Store — Free</button>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <img src="logo.png" alt="VelocityMark" class="footer-logo">
+        <p>Accelerating commerce worldwide.</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col"><h4>Buyers</h4><a href="#shop">Browse Products</a><a href="#" onclick="showModal('trackOrderModal');return false;">Track Order</a><a href="#sellers">Find Sellers</a></div>
+        <div class="footer-col"><h4>Sellers</h4><a href="#" onclick="showModal('loginModal');return false;">Start Selling</a><a href="#" onclick="showModal('loginModal');return false;">Seller Dashboard</a></div>
+        <div class="footer-col"><h4>Support</h4><a href="mailto:support@velocitymark.com">Contact Us</a></div>
+      </div>
+    </div>
+    <div class="footer-bottom"><p>&copy; 2024 VelocityMark. Built by Mr Ntando Ofc. All rights reserved.</p></div>
+  </footer>
+
+  <!-- Auth Modal -->
+  <div class="modal" id="loginModal">
+    <div class="modal-overlay" onclick="closeModal('loginModal')"></div>
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('loginModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div id="loginForm">
+        <h2 class="modal-title">Seller Login</h2>
+        <p class="modal-sub">Access your VelocityMark store</p>
+        <form onsubmit="vendorLogin(event)">
+          <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com" required></div>
+          <div class="form-group"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••" required></div>
+          <button type="submit" class="btn btn-primary btn-full">Login to Store</button>
+        </form>
+        <p class="modal-switch">No account? <a href="#" onclick="switchToRegister()">Register here</a></p>
+      </div>
+      <div id="registerForm" style="display:none;">
+        <h2 class="modal-title">Create Your Store</h2>
+        <p class="modal-sub">Start selling on VelocityMark — free</p>
+        <form onsubmit="vendorRegister(event)">
+          <div class="form-group"><label>Full Name</label><input type="text" id="regName" placeholder="Your name" required></div>
+          <div class="form-group"><label>Email</label><input type="email" id="regEmail" placeholder="you@example.com" required></div>
+          <div class="form-group"><label>Password</label><input type="password" id="regPassword" placeholder="At least 8 characters" required></div>
+          <div class="form-group"><label>Store Name</label><input type="text" id="storeName" placeholder="My Awesome Store" required></div>
+          <div class="form-group"><label>Store Description</label><textarea id="storeDesc" placeholder="What do you sell?" rows="2"></textarea></div>
+          <div class="form-group"><label>Category</label>
+            <select id="storeCategory"><option value="">Select category</option><option value="electronics">Electronics</option><option value="fashion">Fashion</option><option value="home">Home & Garden</option><option value="sports">Sports</option><option value="other">Other</option></select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">Create My Store</button>
+        </form>
+        <p class="modal-switch">Have an account? <a href="#" onclick="switchToLogin()">Login here</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Product Detail Modal -->
+  <div class="modal" id="productModal">
+    <div class="modal-overlay" onclick="closeModal('productModal')"></div>
+    <div class="modal-box modal-box-wide">
+      <button class="modal-close" onclick="closeModal('productModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div id="productModalContent"></div>
+    </div>
+  </div>
+
+  <!-- Track Order Modal -->
+  <div class="modal" id="trackOrderModal">
+    <div class="modal-overlay" onclick="closeModal('trackOrderModal')"></div>
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('trackOrderModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h2 class="modal-title">Track Your Order</h2>
+      <p class="modal-sub">Enter your order ID or the email used at checkout</p>
+      <div class="form-group"><label>Order ID or Email</label><input type="text" id="trackInput" placeholder="ORD-XXXX or email@example.com"></div>
+      <button class="btn btn-primary btn-full" onclick="trackOrder()">Track Order</button>
+      <div id="trackResult" style="margin-top:1.5rem;"></div>
+    </div>
+  </div>
+
+  <!-- Checkout Modal -->
+  <div class="modal" id="checkoutModal">
+    <div class="modal-overlay" onclick="closeModal('checkoutModal')"></div>
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('checkoutModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h2 class="modal-title">Checkout</h2>
+      <form id="checkoutForm" onsubmit="processCheckout(event)">
+        <div class="form-group"><label>Full Name</label><input type="text" id="customerName" placeholder="John Smith" required></div>
+        <div class="form-group"><label>Email</label><input type="email" id="customerEmail" placeholder="john@example.com" required></div>
+        <div class="form-group"><label>Shipping Address</label><textarea id="shippingAddress" placeholder="Street, City, Country" rows="3" required></textarea></div>
+        <div class="coupon-row">
+          <input type="text" id="couponInput" placeholder="Discount code" style="text-transform:uppercase;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="applyCoupon()">Apply</button>
+        </div>
+        <div id="couponResult"></div>
+        <div class="order-summary" id="orderSummary"></div>
+        <button type="submit" class="btn btn-primary btn-full" id="checkoutBtn">Place Order</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Seller Dashboard Modal -->
+  <div class="modal modal-fullscreen" id="dashboardModal">
+    <div class="modal-overlay" onclick="closeModal('dashboardModal')"></div>
+    <div class="modal-box modal-box-dashboard">
+      <button class="modal-close" onclick="closeModal('dashboardModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div class="dashboard-header">
+        <h2>Seller Dashboard</h2>
+        <div class="dash-stats">
+          <div class="dash-stat"><span class="dash-stat-val" id="productCount">—</span><span class="dash-stat-label">Products</span></div>
+          <div class="dash-stat"><span class="dash-stat-val" id="orderCount">—</span><span class="dash-stat-label">Orders</span></div>
+          <div class="dash-stat"><span class="dash-stat-val" id="totalRevenue">—</span><span class="dash-stat-label">Earnings</span></div>
+        </div>
+      </div>
+      <div class="dash-tabs">
+        <button class="dash-tab active" onclick="switchDashTab('analytics',this)">Analytics</button>
+        <button class="dash-tab" onclick="switchDashTab('products',this)">Products</button>
+        <button class="dash-tab" onclick="switchDashTab('orders',this)">Orders</button>
+        <button class="dash-tab" onclick="switchDashTab('coupons',this)">Coupons</button>
+        <button class="dash-tab" onclick="switchDashTab('stock',this)">Stock</button>
+        <button class="dash-tab" onclick="switchDashTab('profile',this)">Profile</button>
+      </div>
+      <!-- Analytics -->
+      <div id="tab-analytics" class="dash-panel active">
+        <div class="analytics-grid">
+          <div class="analytics-card card-full"><h4>Sales Last 7 Days</h4><div class="bar-chart" id="salesChart"></div></div>
+          <div class="analytics-card"><h4>Order Status</h4><div id="orderBreakdown" class="ob-grid"></div></div>
+          <div class="analytics-card"><h4>Top Products</h4><div id="topProductsList"></div></div>
+          <div class="analytics-card"><h4>Low Stock Alert</h4><div id="lowStockList"></div></div>
+        </div>
+      </div>
+      <!-- Products -->
+      <div id="tab-products" class="dash-panel" style="display:none;">
+        <div class="dash-panel-toolbar">
+          <h3>My Products</h3>
+          <button class="btn btn-primary btn-sm" onclick="showAddProductForm()">+ Add Product</button>
+        </div>
+        <div id="addProductForm" style="display:none;" class="add-product-form">
+          <h4>New Product</h4>
+          <div class="form-row">
+            <div class="form-group"><label>Name</label><input type="text" id="prodName" placeholder="Product name" required></div>
+            <div class="form-group"><label>Price ($)</label><input type="number" id="prodPrice" placeholder="0.00" step="0.01" required></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Original Price ($)</label><input type="number" id="prodOriginal" placeholder="0.00" step="0.01"></div>
+            <div class="form-group"><label>Stock</label><input type="number" id="prodStock" placeholder="999"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Category</label>
+              <select id="prodCategory"><option value="electronics">Electronics</option><option value="fashion">Fashion</option><option value="home">Home</option><option value="sports">Sports</option><option value="other">Other</option></select>
             </div>
-            <button class="btn btn-primary btn-full" onclick="goToCheckout()">Checkout</button>
+            <div class="form-group"><label>SKU</label><input type="text" id="prodSku" placeholder="SKU-001"></div>
+          </div>
+          <div class="form-group"><label>Image URL</label><input type="url" id="prodImage" placeholder="https://example.com/image.jpg"></div>
+          <div class="form-group"><label>Description</label><textarea id="prodDesc" rows="3" placeholder="Describe your product..."></textarea></div>
+          <div class="form-group"><label>Tags (comma separated)</label><input type="text" id="prodTags" placeholder="wireless, portable, black"></div>
+          <div class="form-action-row">
+            <button class="btn btn-primary btn-sm" onclick="uploadProduct()">Save Product</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('addProductForm').style.display='none'">Cancel</button>
+          </div>
         </div>
+        <div id="myProductsList" class="my-products-list"></div>
+      </div>
+      <!-- Orders -->
+      <div id="tab-orders" class="dash-panel" style="display:none;">
+        <div class="dash-panel-toolbar">
+          <h3>Orders</h3>
+          <select id="orderStatusFilter" onchange="filterOrders()" class="filter-select">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+          </select>
+        </div>
+        <div id="myOrdersList"></div>
+      </div>
+      <!-- Coupons -->
+      <div id="tab-coupons" class="dash-panel" style="display:none;">
+        <div class="dash-panel-toolbar"><h3>Discount Codes</h3></div>
+        <div class="add-product-form" style="margin-bottom:1.5rem;">
+          <h4>Create Coupon</h4>
+          <div class="form-row">
+            <div class="form-group"><label>Code</label><input type="text" id="couponCode" placeholder="SAVE20" style="text-transform:uppercase;"></div>
+            <div class="form-group"><label>Type</label><select id="couponType"><option value="percent">Percent (%)</option><option value="fixed">Fixed ($)</option></select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Value</label><input type="number" id="couponValue" placeholder="20"></div>
+            <div class="form-group"><label>Min Order ($)</label><input type="number" id="couponMin" placeholder="0"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Max Uses (0 = unlimited)</label><input type="number" id="couponMaxUses" placeholder="0"></div>
+            <div class="form-group"><label>Expires</label><input type="date" id="couponExpiry"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="createCoupon()">Create Coupon</button>
+        </div>
+        <div id="couponsList"></div>
+      </div>
+      <!-- Stock -->
+      <div id="tab-stock" class="dash-panel" style="display:none;">
+        <div class="dash-panel-toolbar"><h3>Stock Management</h3></div>
+        <div id="stockList"></div>
+      </div>
+      <!-- Profile -->
+      <div id="tab-profile" class="dash-panel" style="display:none;">
+        <h3>Store Profile</h3>
+        <form onsubmit="saveStoreProfile(event)" class="profile-form">
+          <div class="form-row">
+            <div class="form-group"><label>Store Name</label><input type="text" id="profileStoreName"></div>
+            <div class="form-group"><label>Category</label><select id="profileCategory"><option value="">Select</option><option value="electronics">Electronics</option><option value="fashion">Fashion</option><option value="home">Home</option><option value="sports">Sports</option><option value="other">Other</option></select></div>
+          </div>
+          <div class="form-group"><label>Description</label><textarea id="profileStoreDesc" rows="3"></textarea></div>
+          <div class="form-row">
+            <div class="form-group"><label>Contact Email</label><input type="email" id="profileContactEmail"></div>
+            <div class="form-group"><label>Phone</label><input type="text" id="profileContactPhone"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Location</label><input type="text" id="profileLocation"></div>
+            <div class="form-group"><label>Website</label><input type="url" id="profileWebsite"></div>
+          </div>
+          <div class="form-group"><label>Store Icon (emoji or image URL)</label><input type="text" id="profileImage" placeholder="🏪 or https://..."></div>
+          <div class="form-group"><label>WhatsApp Number <span style="color:#25d366;font-size:.8rem">💬 Buyers contact you directly</span></label><input type="text" id="profileWhatsapp" placeholder="+1234567890 (include country code)"></div>
+          <button type="submit" class="btn btn-primary">Save Profile</button>
+        </form>
+      </div>
     </div>
+  </div>
 
-    <!-- Checkout Modal -->
-    <div class="modal" id="checkoutModal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="closeModal('checkoutModal')">✕</button>
-            <h2>Checkout</h2>
-            <form id="checkoutForm" onsubmit="processCheckout(event)">
-                <input type="text" placeholder="Full Name" id="customerName" required>
-                <input type="email" placeholder="Email" id="customerEmail" required>
-                <textarea placeholder="Shipping Address" id="shippingAddress" required></textarea>
-                <!-- Coupon -->
-                <div style="display:flex;gap:.5rem;margin-bottom:.75rem;">
-                    <input type="text" placeholder="Discount code" id="couponInput" style="flex:1;padding:.6rem;border-radius:8px;border:1px solid #ddd;text-transform:uppercase;">
-                    <button type="button" class="btn btn-small" onclick="applyCoupon()" style="white-space:nowrap;">Apply Code</button>
-                </div>
-                <div id="couponResult" style="font-size:.85rem;margin-bottom:.5rem;"></div>
-                <div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:.75rem;font-size:1rem;">
-                    <span>Total:</span><span id="checkoutTotal">$0.00</span>
-                </div>
-                <button type="submit" class="btn btn-primary btn-full">💳 Pay with Stripe</button>
-            </form>
-        </div>
+  <!-- Cart Sidebar -->
+  <div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-sidebar-header"><h3>Your Cart</h3><button onclick="toggleCart()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="cart-sidebar-items" id="cartItems"><div class="cart-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><p>Your cart is empty</p></div></div>
+    <div class="cart-sidebar-footer" id="cartFooter" style="display:none;">
+      <div class="cart-total-row"><span>Total</span><span id="cartTotal" class="cart-total-amount">$0.00</span></div>
+      <button class="btn btn-primary btn-full" onclick="goToCheckout()">Proceed to Checkout</button>
     </div>
+  </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2026 VelocityMark Global Marketplace. Created by Mr Ntando Ofc.</p>
-        </div>
-    </footer>
+  <!-- Wishlist Sidebar -->
+  <div class="cart-sidebar" id="wishlistSidebar">
+    <div class="cart-sidebar-header"><h3>Wishlist</h3><button onclick="toggleWishlistPanel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="cart-sidebar-items" id="wishlistItems"><div class="cart-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><p>No saved items yet</p></div></div>
+  </div>
 
-    <script src="marketplace.js"></script>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeAllSidebars()"></div>
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="marketplace.js"></script>
 </body>
 </html>

@@ -34,6 +34,7 @@ const vendorSchema = new mongoose.Schema({
   storeDesc:      { type: String },
   image:          { type: String },
   category:       { type: String },
+  whatsapp:       { type: String },
   rating:         { type: Number, default: 5 },
   reviews:        { type: Number, default: 0 },
   verified:       { type: Boolean, default: false },
@@ -412,11 +413,11 @@ app.put('/api/vendor/orders/:id/status', verifyVendor, async (req, res) => {
 // ─── VENDOR PROFILE UPDATE ───────────────────────────────────────────────────
 
 app.put('/api/vendor/profile', verifyVendor, async (req, res) => {
-  const { storeName, storeDesc, category, image, contactEmail, contactPhone, location, website, socialLinks } = req.body;
+  const { storeName, storeDesc, category, image, contactEmail, contactPhone, whatsapp, location, website } = req.body;
   try {
     const vendor = await Vendor.findByIdAndUpdate(
       req.vendorId,
-      { storeName, storeDesc, category, image, contactEmail, contactPhone, location, website, socialLinks },
+      { storeName, storeDesc, category, image, contactEmail, contactPhone, whatsapp, location, website },
       { new: true }
     );
     res.json({ success: true, vendor });
@@ -928,6 +929,36 @@ app.get('*', (req, res) => {
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
+
+// ─── ORDER TRACKING (PUBLIC) ─────────────────────────────────────────────────
+app.get('/api/orders/track', async (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ error: 'Provide order ID or email' });
+  try {
+    const isEmail = q.includes('@');
+    let orders;
+    if (isEmail) {
+      orders = await Order.find({ email: q.toLowerCase() }).sort({ createdAt: -1 }).limit(5);
+    } else {
+      orders = await Order.find({ orderId: q }).limit(1);
+    }
+    if (!orders || !orders.length) return res.status(404).json({ error: 'No order found. Check your order ID or email.' });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── SPONSORED PRODUCTS (PUBLIC) ────────────────────────────────────────────
+app.get('/api/products/sponsored', async (req, res) => {
+  try {
+    const now = new Date();
+    const sponsored = await Product.find({ sponsored: true, sponsoredUntil: { $gte: now } }).limit(4);
+    res.json(sponsored);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 VelocityMark Marketplace running on port ${PORT}`);
