@@ -396,6 +396,242 @@ app.put('/api/vendor/orders/:id/status', verifyVendor, async (req, res) => {
   }
 });
 
+// ─── VENDOR PROFILE UPDATE ───────────────────────────────────────────────────
+
+app.put('/api/vendor/profile', verifyVendor, async (req, res) => {
+  const { storeName, storeDesc, category, image, contactEmail, contactPhone, location, website, socialLinks } = req.body;
+  try {
+    const vendor = await Vendor.findByIdAndUpdate(
+      req.vendorId,
+      { storeName, storeDesc, category, image, contactEmail, contactPhone, location, website, socialLinks },
+      { new: true }
+    );
+    res.json({ success: true, vendor });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── VENDOR ANALYTICS ────────────────────────────────────────────────────────
+
+app.get('/api/vendor/analytics', verifyVendor, async (req, res) => {
+  try {
+    const vendorId = req.vendorId;
+
+    // Sales by day (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const recentOrders = await Order.find({
+      vendorId,
+      createdAt: { $gte: sevenDaysAgo }
+    }).sort({ createdAt: 1 });
+
+    const salesByDay = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      salesByDay[key] = { date: key, orders: 0, revenue: 0 };
+    }
+    recentOrders.forEach(o => {
+      const key = o.createdAt.toISOString().slice(0, 10);
+      if (salesByDay[key]) {
+        salesByDay[key].orders += 1;
+        salesByDay[key].revenue += o.vendorEarnings || 0;
+      }
+    });
+
+    // Top products by order frequency
+    const allOrders = await Order.find({ vendorId });
+    const productFreq = {};
+    allOrders.forEach(o => {
+      (o.items || []).forEach(item => {
+        const key = item.name || item.productId?.toString();
+        if (!productFreq[key]) productFreq[key] = { name: item.name, sold: 0, revenue: 0 };
+        productFreq[key].sold += item.quantity || 1;
+        productFreq[key].revenue += (item.price || 0) * (item.quantity || 1);
+      });
+    });
+    const topProducts = Object.values(productFreq).sort((a, b) => b.sold - a.sold).slice(0, 5);
+
+    // Low stock products (stock <= 5)
+    const lowStock = await Product.find({ vendorId, stock: { $lte: 5 } }).select('name stock price');
+
+    // Revenue breakdown
+    const vendor = await Vendor.findById(vendorId);
+    const totalOrders = await Order.countDocuments({ vendorId });
+    const pendingOrders = await Order.countDocuments({ vendorId, status: 'pending' });
+    const shippedOrders = await Order.countDocuments({ vendorId, status: 'shipped' });
+    const deliveredOrders = await Order.countDocuments({ vendorId, status: 'delivered' });
+
+    res.json({
+      salesByDay: Object.values(salesByDay),
+      topProducts,
+      lowStock,
+      orderBreakdown: { total: totalOrders, pending: pendingOrders, shipped: shippedOrders, delivered: deliveredOrders },
+      totalEarnings: vendor.totalEarnings,
+      totalSales: vendor.totalSales
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── PRODUCT REVIEWS ─────────────────────────────────────────────────────────
+
+const reviewSchema = new mongoose.Schema({
+  productId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+  vendorId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' },
+  customerName: { type: String, required: true },
+  customerEmail: { type: String },
+  rating:     { type: Number, required: true, min: 1, max: 5 },
+  comment:    { type: String },
+  verified:   { type: Boolean, default: false },
+  createdAt:  { type: Date, default: Date.now }
+});
+const Review = mongoose.model('Review', reviewSchema);
+
+// Submit a review
+app.post('/api/products/:id/reviews', async (req, res) => {
+  const { customerName, customerEmail, rating, comment } = req.body;
+  if (!customerName || !rating) return res.status(400).json({ error: 'Name and rating required' });
+
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+
+    const review = await Review.create({
+      productId: req.params.id,
+      vendorId: product.vendorId,
+      customerName,
+      customerEmail,
+      rating,
+      comment
+    });
+
+    // Update product avg rating
+    const allReviews = await Review.find({ productId: req.params.id });
+    const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
+    await Product.findByIdAndUpdate(req.params.id, { rating: Math.round(avgRating * 10) / 10, reviews: allReviews.length });
+
+    res.json({ success: true, review });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get reviews for a product
+app.get('/api/products/:id/reviews', async (req, res) => {
+  try {
+    const reviews = await Review.find({ productId: req.params.id }).sort({ createdAt: -1 });
+    res.json(reviews);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Vendor views all reviews for their products
+app.get('/api/vendor/reviews', verifyVendor, async (req, res) => {
+  try {
+    const reviews = await Review.find({ vendorId: req.vendorId }).sort({ createdAt: -1 }).limit(50);
+    res.json(reviews);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Vendor replies to a review (stored as a field)
+app.put('/api/vendor/reviews/:id/reply', verifyVendor, async (req, res) => {
+  const { reply } = req.body;
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review || review.vendorId.toString() !== req.vendorId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    review.set('reply', reply);
+    await review.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── VENDOR PAYOUT SUMMARY ───────────────────────────────────────────────────
+
+app.get('/api/vendor/payouts', verifyVendor, async (req, res) => {
+  try {
+    const vendor = await Vendor.findById(req.vendorId);
+    const deliveredOrders = await Order.find({ vendorId: req.vendorId, status: 'delivered' }).sort({ createdAt: -1 }).limit(20);
+    const pendingEarnings = await Order.aggregate([
+      { $match: { vendorId: new mongoose.Types.ObjectId(req.vendorId), status: { $in: ['pending', 'shipped'] } } },
+      { $group: { _id: null, total: { $sum: '$vendorEarnings' } } }
+    ]);
+    res.json({
+      totalEarnings: vendor.totalEarnings,
+      pendingEarnings: pendingEarnings[0]?.total || 0,
+      recentPayouts: deliveredOrders.map(o => ({
+        orderId: o.orderId,
+        amount: o.vendorEarnings,
+        date: o.createdAt,
+        status: 'paid'
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── PUBLIC VENDOR STORE PAGE ────────────────────────────────────────────────
+
+app.get('/api/vendors/:id/store', async (req, res) => {
+  try {
+    const vendor = await Vendor.findById(req.params.id).select('-password');
+    if (!vendor) return res.status(404).json({ error: 'Vendor not found' });
+    const products = await Product.find({ vendorId: req.params.id });
+    const reviews = await Review.find({ vendorId: req.params.id }).sort({ createdAt: -1 }).limit(10);
+    res.json({ vendor, products, reviews });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── BULK PRODUCT ACTIONS ────────────────────────────────────────────────────
+
+// Duplicate a product
+app.post('/api/products/:id/duplicate', verifyVendor, async (req, res) => {
+  try {
+    const original = await Product.findById(req.params.id);
+    if (!original || original.vendorId.toString() !== req.vendorId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const copy = original.toObject();
+    delete copy._id;
+    copy.name = copy.name + ' (Copy)';
+    copy.featured = false;
+    copy.createdAt = new Date();
+    const newProduct = await Product.create(copy);
+    res.json({ success: true, product: newProduct });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Toggle featured
+app.put('/api/products/:id/feature', verifyVendor, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product || product.vendorId.toString() !== req.vendorId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    product.featured = !product.featured;
+    await product.save();
+    res.json({ success: true, featured: product.featured });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── SPA Fallback ─────────────────────────────────────────────────────────────
 
 app.get('*', (req, res) => {

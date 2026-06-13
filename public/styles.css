@@ -40,7 +40,8 @@ h2 { font-size: 2.5rem; text-align: center; }
     padding: 1rem 20px;
 }
 
-.nav-brand { flex: 1; }
+.nav-brand { flex: 1; display: flex; align-items: center; }
+.nav-logo { height: 42px; width: auto; object-fit: contain; filter: brightness(0) invert(0); }
 .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
 .tagline { font-size: 0.75rem; color: #999; margin: 0; }
 
@@ -449,4 +450,76 @@ h2 { font-size: 2.5rem; text-align: center; }
     .products-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
     .cart-sidebar { width: 100%; right: -100%; }
     .search-box { width: 100%; }
+}
+
+/* ── New Vendor Dashboard Styles 2026 ── */
+.dashboard-content { max-width: 820px; max-height: 90vh; overflow-y: auto; }
+
+.dashboard-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.25rem; }
+.tab-btn { padding: 0.4rem 0.75rem; border-radius: 20px; border: 1px solid var(--border); background: #f5f5f5; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.2s; white-space: nowrap; }
+.tab-btn.active, .tab-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+.order-breakdown { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.ob-chip { flex: 1; min-width: 80px; background: #f8f9fa; border-radius: 8px; padding: 0.6rem 0.75rem; text-align: center; border: 1px solid #eee; }
+.ob-chip span { display: block; font-size: 1.4rem; font-weight: 800; }
+.ob-chip small { font-size: 0.7rem; color: #888; text-transform: uppercase; }
+.ob-chip.pending span { color: #f59e0b; }
+.ob-chip.shipped span { color: #3b82f6; }
+.ob-chip.delivered span { color: #10b981; }
+
+/* Bar Chart */
+.bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 80px; background: #f8f9fa; border-radius: 8px; padding: 8px 12px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+.bar { width: 100%; background: var(--primary); border-radius: 4px 4px 0 0; min-height: 3px; transition: height 0.4s; }
+.bar-label { font-size: 0.6rem; color: #888; white-space: nowrap; }
+.bar-val { font-size: 0.6rem; color: var(--primary); font-weight: 700; }
+
+/* Top products list */
+.top-prod-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.875rem; }
+.top-prod-row:last-child { border-bottom: none; }
+.top-prod-badge { background: var(--primary); color: white; font-size: 0.7rem; border-radius: 10px; padding: 2px 8px; }
+
+/* Low stock alert */
+.low-stock-alert { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 1rem; }
+.low-stock-alert h4 { color: #c2410c; margin-bottom: 0.5rem; }
+.low-stock-item { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.25rem 0; }
+.stock-badge { background: #fee2e2; color: #dc2626; border-radius: 4px; padding: 1px 6px; font-size: 0.75rem; font-weight: 700; }
+
+/* Product list items */
+.product-list-item { display: grid; grid-template-columns: 1fr auto auto auto auto auto; gap: 0.5rem; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px; margin-bottom: 0.5rem; font-size: 0.85rem; border: 1px solid #eee; }
+.product-list-item .prod-name { font-weight: 600; }
+.product-list-item .prod-price { color: var(--primary); font-weight: 700; }
+.product-list-item .prod-stock { color: #888; font-size: 0.78rem; }
+.featured-badge { background: #fef3c7; color: #92400e; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; }
+
+/* Order items */
+.order-item { background: #f9fafb; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; border: 1px solid #eee; }
+.order-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; font-size: 0.85rem; }
+.order-id { font-weight: 700; font-family: monospace; color: var(--primary); }
+.order-earnings { font-weight: 700; color: #10b981; }
+.order-status-select { padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid #ddd; font-size: 0.78rem; cursor: pointer; }
+
+/* Reviews */
+.review-card { background: #fafafa; border-radius: 10px; padding: 1rem; margin-bottom: 0.75rem; border: 1px solid #eee; }
+.review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+.review-name { font-weight: 700; font-size: 0.875rem; }
+.review-stars { color: #f59e0b; font-size: 0.9rem; }
+.review-comment { font-size: 0.85rem; color: #555; margin: 0.4rem 0; }
+.review-product { font-size: 0.75rem; color: #999; }
+.review-reply-box { margin-top: 0.75rem; display: flex; gap: 0.5rem; }
+.review-reply-box input { flex: 1; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #ddd; font-size: 0.8rem; }
+.vendor-reply { margin-top: 0.5rem; background: #eff6ff; border-left: 3px solid var(--primary); padding: 0.5rem 0.75rem; border-radius: 0 6px 6px 0; font-size: 0.82rem; color: #1e3a8a; }
+
+/* Payouts */
+.payout-row { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; }
+.payout-amount { font-weight: 700; color: #10b981; }
+.payout-date { color: #888; font-size: 0.78rem; }
+
+/* Profile form */
+#profile input, #profile textarea, #profile select { width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 0.6rem; font-size: 0.875rem; box-sizing: border-box; }
+
+@media (max-width: 600px) {
+  .product-list-item { grid-template-columns: 1fr auto auto; }
+  .dashboard-tabs { gap: 0.3rem; }
+  .tab-btn { font-size: 0.72rem; padding: 0.35rem 0.55rem; }
 }

@@ -6,14 +6,14 @@
     <title>VelocityMark - Global Multi-Vendor Marketplace</title>
     <meta name="description" content="The world's leading marketplace. Buy and sell anything globally. Secure checkout, trusted sellers.">
     <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="favicon.png">
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
             <div class="nav-brand">
-                <span class="logo">⚡ VelocityMark</span>
-                <p class="tagline">Global Marketplace</p>
+                <img src="logo.png" alt="VelocityMark" class="nav-logo">
             </div>
             <ul class="nav-menu" id="navMenu">
                 <li><a href="#home" class="nav-link">Home</a></li>
@@ -117,17 +117,20 @@
     <div class="modal" id="dashboardModal">
         <div class="modal-content dashboard-content">
             <button class="close-btn" onclick="closeModal('dashboardModal')">✕</button>
-            <h2>Seller Dashboard</h2>
+            <h2>⚡ Seller Dashboard</h2>
             
             <div class="dashboard-tabs">
-                <button class="tab-btn active" onclick="switchTab('stats')">Stats</button>
-                <button class="tab-btn" onclick="switchTab('products')">My Products</button>
-                <button class="tab-btn" onclick="switchTab('upload')">Upload Product</button>
-                <button class="tab-btn" onclick="switchTab('orders')">Orders</button>
+                <button class="tab-btn active" onclick="switchTab('stats'); loadAnalytics();">📊 Overview</button>
+                <button class="tab-btn" onclick="switchTab('products'); loadMyProducts();">📦 Products</button>
+                <button class="tab-btn" onclick="switchTab('upload');">➕ Add Product</button>
+                <button class="tab-btn" onclick="switchTab('orders'); loadMyOrders();">🧾 Orders</button>
+                <button class="tab-btn" onclick="switchTab('reviews'); loadMyReviews();">⭐ Reviews</button>
+                <button class="tab-btn" onclick="switchTab('payouts'); loadPayouts();">💰 Payouts</button>
+                <button class="tab-btn" onclick="switchTab('profile');">🏪 Store Profile</button>
             </div>
 
-            <!-- Stats Tab -->
-            <div id="stats" class="tab-content active">
+            <!-- Overview / Stats Tab -->
+            <div id="stats" class="tab-content">
                 <div class="stats-grid">
                     <div class="stat-card">
                         <h3 id="productCount">0</h3>
@@ -142,36 +145,137 @@
                         <p>Total Earnings</p>
                     </div>
                 </div>
+                <!-- Order status breakdown -->
+                <div class="order-breakdown" id="orderBreakdown" style="margin-top:1rem;"></div>
+                <!-- Sales chart (last 7 days) -->
+                <div class="chart-section" style="margin-top:1.5rem;">
+                    <h4 style="margin-bottom:0.75rem;">Sales Last 7 Days</h4>
+                    <div class="bar-chart" id="salesChart"></div>
+                </div>
+                <!-- Top products -->
+                <div style="margin-top:1.5rem;">
+                    <h4 style="margin-bottom:0.75rem;">🏆 Top Products</h4>
+                    <div id="topProductsList"></div>
+                </div>
+                <!-- Low stock alert -->
+                <div id="lowStockAlert" style="margin-top:1.5rem;"></div>
             </div>
 
             <!-- Products Tab -->
             <div id="products" class="tab-content" style="display:none;">
+                <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                    <input type="text" placeholder="Search your products..." id="myProductSearch" oninput="filterMyProducts()" class="search-box" style="flex:1;">
+                    <select id="myProductCatFilter" onchange="filterMyProducts()" style="padding:0.5rem; border-radius:6px; border:1px solid #ddd;">
+                        <option value="">All Categories</option>
+                        <option value="electronics">Electronics</option>
+                        <option value="fashion">Fashion</option>
+                        <option value="home">Home</option>
+                        <option value="sports">Sports</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
                 <div id="myProductsList"></div>
             </div>
 
-            <!-- Upload Tab -->
+            <!-- Upload / Add Product Tab -->
             <div id="upload" class="tab-content" style="display:none;">
-                <form onsubmit="uploadProduct(event)">
-                    <input type="text" placeholder="Product Name" id="prodName" required>
-                    <textarea placeholder="Description" id="prodDesc"></textarea>
-                    <input type="number" placeholder="Price ($)" id="prodPrice" step="0.01" required>
-                    <input type="number" placeholder="Original Price ($)" id="prodOriginal" step="0.01">
+                <form onsubmit="uploadProduct(event)" id="uploadForm">
+                    <input type="text" placeholder="Product Name *" id="prodName" required>
+                    <textarea placeholder="Description" id="prodDesc" rows="3"></textarea>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                        <input type="number" placeholder="Price ($) *" id="prodPrice" step="0.01" required>
+                        <input type="number" placeholder="Original/Compare Price ($)" id="prodOriginal" step="0.01">
+                    </div>
                     <select id="prodCategory" required>
-                        <option value="">Select Category</option>
+                        <option value="">Select Category *</option>
                         <option value="electronics">Electronics</option>
                         <option value="fashion">Fashion</option>
                         <option value="home">Home & Garden</option>
                         <option value="sports">Sports</option>
+                        <option value="other">Other</option>
                     </select>
-                    <input type="number" placeholder="Stock Quantity" id="prodStock" value="999">
-                    <input type="text" placeholder="Product Tags (comma separated)" id="prodTags">
-                    <button type="submit" class="btn btn-primary btn-full">Upload Product</button>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                        <input type="number" placeholder="Stock Quantity" id="prodStock" value="999">
+                        <input type="text" placeholder="Emoji icon (e.g. 📱)" id="prodImage" value="📦">
+                    </div>
+                    <input type="text" placeholder="Tags (comma separated: e.g. summer, sale)" id="prodTags">
+                    <button type="submit" class="btn btn-primary btn-full">🚀 Upload Product</button>
                 </form>
+            </div>
+
+            <!-- Edit Product Modal (inline) -->
+            <div id="editProductPanel" style="display:none; background:#f8f9fa; border-radius:10px; padding:1rem; margin-bottom:1rem;">
+                <h4 style="margin-bottom:0.75rem;">✏️ Edit Product</h4>
+                <input type="hidden" id="editProdId">
+                <input type="text" placeholder="Product Name" id="editProdName">
+                <textarea placeholder="Description" id="editProdDesc" rows="2"></textarea>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                    <input type="number" placeholder="Price ($)" id="editProdPrice" step="0.01">
+                    <input type="number" placeholder="Stock" id="editProdStock">
+                </div>
+                <select id="editProdCategory">
+                    <option value="electronics">Electronics</option>
+                    <option value="fashion">Fashion</option>
+                    <option value="home">Home</option>
+                    <option value="sports">Sports</option>
+                    <option value="other">Other</option>
+                </select>
+                <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
+                    <button class="btn btn-primary" onclick="saveProductEdit()">Save Changes</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('editProductPanel').style.display='none'">Cancel</button>
+                </div>
             </div>
 
             <!-- Orders Tab -->
             <div id="orders" class="tab-content" style="display:none;">
+                <div style="margin-bottom:0.75rem;">
+                    <select id="orderStatusFilter" onchange="filterOrders()" style="padding:0.5rem; border-radius:6px; border:1px solid #ddd;">
+                        <option value="">All Orders</option>
+                        <option value="pending">Pending</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                    </select>
+                </div>
                 <div id="myOrdersList"></div>
+            </div>
+
+            <!-- Reviews Tab -->
+            <div id="reviews" class="tab-content" style="display:none;">
+                <div id="myReviewsList"></div>
+            </div>
+
+            <!-- Payouts Tab -->
+            <div id="payouts" class="tab-content" style="display:none;">
+                <div class="stats-grid" id="payoutStats"></div>
+                <div style="margin-top:1.5rem;">
+                    <h4 style="margin-bottom:0.75rem;">💸 Recent Payouts (Delivered Orders)</h4>
+                    <div id="payoutHistory"></div>
+                </div>
+            </div>
+
+            <!-- Store Profile Tab -->
+            <div id="profile" class="tab-content" style="display:none;">
+                <form onsubmit="saveStoreProfile(event)">
+                    <input type="text" placeholder="Store Name" id="profileStoreName">
+                    <textarea placeholder="Store Description" id="profileStoreDesc" rows="3"></textarea>
+                    <select id="profileCategory">
+                        <option value="">Category</option>
+                        <option value="electronics">Electronics</option>
+                        <option value="fashion">Fashion</option>
+                        <option value="home">Home & Garden</option>
+                        <option value="sports">Sports</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <input type="text" placeholder="Store Emoji Icon (e.g. 🏪)" id="profileImage">
+                    <input type="email" placeholder="Public Contact Email" id="profileContactEmail">
+                    <input type="text" placeholder="Phone Number" id="profileContactPhone">
+                    <input type="text" placeholder="Location (City, Country)" id="profileLocation">
+                    <input type="url" placeholder="Website URL" id="profileWebsite">
+                    <button type="submit" class="btn btn-primary btn-full">💾 Save Profile</button>
+                </form>
+                <div style="margin-top:1rem; padding:1rem; background:#f0f7ff; border-radius:8px; font-size:0.875rem; color:#555;">
+                    💡 Your store profile is visible to buyers who click "View Store" on your products.
+                </div>
             </div>
         </div>
     </div>
@@ -211,7 +315,7 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 VelocityMark Global Marketplace. Created by Mr Ntando Ofc.</p>
+            <p>&copy; 2026 VelocityMark Global Marketplace. Created by Mr Ntando Ofc.</p>
         </div>
     </footer>
 
