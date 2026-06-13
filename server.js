@@ -40,6 +40,12 @@ const vendorSchema = new mongoose.Schema({
   stripeConnectId: { type: String },
   totalSales:     { type: Number, default: 0 },
   totalEarnings:  { type: Number, default: 0 },
+  plan:           { type: String, default: 'free', enum: ['free','premium'] },
+  contactEmail:   { type: String },
+  contactPhone:   { type: String },
+  location:       { type: String },
+  website:        { type: String },
+  notifications:  [{ message: String, type: String, read: { type: Boolean, default: false }, createdAt: { type: Date, default: Date.now } }],
   createdAt:      { type: Date, default: Date.now }
 });
 
@@ -58,6 +64,13 @@ const productSchema = new mongoose.Schema({
   reviews:        { type: Number, default: 0 },
   featured:       { type: Boolean, default: false },
   tags:           [String],
+  sku:            { type: String },
+  openingStock:   { type: Number, default: 0 },
+  lowStockThreshold: { type: Number, default: 5 },
+  variants:       [{ name: String, options: [{ label: String, price: Number, stock: Number }] }],
+  sponsored:      { type: Boolean, default: false },
+  sponsoredUntil: { type: Date },
+  sponsoredBudget:{ type: Number, default: 0 },
   createdAt:      { type: Date, default: Date.now }
 });
 
@@ -630,6 +643,282 @@ app.put('/api/products/:id/feature', verifyVendor, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ─── STOCK MANAGEMENT ────────────────────────────────────────────────────────
+
+const stockLogSchema = new mongoose.Schema({
+  productId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+  vendorId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
+  type:        { type: String, enum: ['opening','add','remove','adjustment','sale','return'], required: true },
+  qty:         { type: Number, required: true },
+  stockBefore: { type: Number },
+  stockAfter:  { type: Number },
+  note:        { type: String },
+  createdAt:   { type: Date, default: Date.now }
+});
+const StockLog = mongoose.model('StockLog', stockLogSchema);
+
+// Set opening stock for a product
+app.post('/api/vendor/stock/opening', verifyVendor, async (req, res) => {
+  const { productId, qty, note, lowStockThreshold, sku } = req.body;
+  if (!productId || qty === undefined) return res.status(400).json({ error: 'productId and qty required' });
+  try {
+    const product = await Product.findById(productId);
+    if (!product || product.vendorId.toString() !== req.vendorId) return res.status(403).json({ error: 'Unauthorized' });
+    const stockBefore = product.stock;
+    product.stock = qty;
+    product.openingStock = qty;
+    if (lowStockThreshold !== undefined) product.lowStockThreshold = lowStockThreshold;
+    if (sku) product.sku = sku;
+    await product.save();
+    await StockLog.create({ productId, vendorId: req.vendorId, type: 'opening', qty, stockBefore, stockAfter: qty, note: note || 'Opening stock set' });
+    res.json({ success: true, stock: product.stock });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Stock adjustment (add or remove)
+app.post('/api/vendor/stock/adjust', verifyVendor, async (req, res) => {
+  const { productId, type, qty, note } = req.body;
+  if (!productId || !type || qty === undefined) return res.status(400).json({ error: 'productId, type, qty required' });
+  try {
+    const product = await Product.findById(productId);
+    if (!product || product.vendorId.toString() !== req.vendorId) return res.status(403).json({ error: 'Unauthorized' });
+    const stockBefore = product.stock;
+    if (type === 'add') product.stock += parseInt(qty);
+    else if (type === 'remove') product.stock = Math.max(0, product.stock - parseInt(qty));
+    else if (type === 'adjustment') product.stock = parseInt(qty);
+    await product.save();
+    await StockLog.create({ productId, vendorId: req.vendorId, type, qty, stockBefore, stockAfter: product.stock, note });
+    // Push low stock notification if needed
+    if (product.stock <= product.lowStockThreshold) {
+      await Vendor.findByIdAndUpdate(req.vendorId, { $push: { notifications: { message: `⚠️ Low stock: "${product.name}" has only ${product.stock} left`, type: 'low_stock' } } });
+    }
+    res.json({ success: true, stock: product.stock });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Get stock history for a product
+app.get('/api/vendor/stock/:productId/history', verifyVendor, async (req, res) => {
+  try {
+    const logs = await StockLog.find({ productId: req.params.productId, vendorId: req.vendorId }).sort({ createdAt: -1 }).limit(50);
+    res.json(logs);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Get full stock overview for vendor
+app.get('/api/vendor/stock', verifyVendor, async (req, res) => {
+  try {
+    const products = await Product.find({ vendorId: req.vendorId }).select('name stock openingStock lowStockThreshold sku image category');
+    res.json(products.map(p => ({ ...p.toObject(), status: p.stock === 0 ? 'out' : p.stock <= p.lowStockThreshold ? 'low' : 'ok' })));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── DISCOUNT CODES ──────────────────────────────────────────────────────────
+
+const couponSchema = new mongoose.Schema({
+  vendorId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
+  code:       { type: String, required: true, uppercase: true },
+  type:       { type: String, enum: ['percent','fixed'], required: true },
+  value:      { type: Number, required: true },
+  minOrder:   { type: Number, default: 0 },
+  maxUses:    { type: Number, default: 0 },
+  usedCount:  { type: Number, default: 0 },
+  expiresAt:  { type: Date },
+  active:     { type: Boolean, default: true },
+  createdAt:  { type: Date, default: Date.now }
+});
+const Coupon = mongoose.model('Coupon', couponSchema);
+
+app.post('/api/vendor/coupons', verifyVendor, async (req, res) => {
+  const { code, type, value, minOrder, maxUses, expiresAt } = req.body;
+  if (!code || !type || !value) return res.status(400).json({ error: 'code, type, value required' });
+  try {
+    const existing = await Coupon.findOne({ vendorId: req.vendorId, code: code.toUpperCase() });
+    if (existing) return res.status(400).json({ error: 'Coupon code already exists' });
+    const coupon = await Coupon.create({ vendorId: req.vendorId, code: code.toUpperCase(), type, value, minOrder, maxUses, expiresAt });
+    res.json({ success: true, coupon });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/vendor/coupons', verifyVendor, async (req, res) => {
+  try {
+    const coupons = await Coupon.find({ vendorId: req.vendorId }).sort({ createdAt: -1 });
+    res.json(coupons);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/vendor/coupons/:id', verifyVendor, async (req, res) => {
+  try {
+    await Coupon.findOneAndDelete({ _id: req.params.id, vendorId: req.vendorId });
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/vendor/coupons/:id/toggle', verifyVendor, async (req, res) => {
+  try {
+    const coupon = await Coupon.findOne({ _id: req.params.id, vendorId: req.vendorId });
+    if (!coupon) return res.status(404).json({ error: 'Not found' });
+    coupon.active = !coupon.active;
+    await coupon.save();
+    res.json({ success: true, active: coupon.active });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Public: validate coupon at checkout
+app.post('/api/coupons/validate', async (req, res) => {
+  const { code, subtotal } = req.body;
+  try {
+    const coupon = await Coupon.findOne({ code: code.toUpperCase(), active: true });
+    if (!coupon) return res.status(404).json({ error: 'Invalid or expired coupon' });
+    if (coupon.expiresAt && new Date() > coupon.expiresAt) return res.status(400).json({ error: 'Coupon has expired' });
+    if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) return res.status(400).json({ error: 'Coupon usage limit reached' });
+    if (subtotal < coupon.minOrder) return res.status(400).json({ error: `Minimum order ${coupon.minOrder} required` });
+    const discount = coupon.type === 'percent' ? (subtotal * coupon.value / 100) : coupon.value;
+    res.json({ success: true, coupon: { code: coupon.code, type: coupon.type, value: coupon.value, discount: Math.min(discount, subtotal) } });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── PRODUCT VARIANTS ────────────────────────────────────────────────────────
+
+app.put('/api/products/:id/variants', verifyVendor, async (req, res) => {
+  const { variants } = req.body;
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product || product.vendorId.toString() !== req.vendorId) return res.status(403).json({ error: 'Unauthorized' });
+    product.variants = variants;
+    await product.save();
+    res.json({ success: true, variants: product.variants });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
+
+app.get('/api/vendor/notifications', verifyVendor, async (req, res) => {
+  try {
+    const vendor = await Vendor.findById(req.vendorId);
+    const notifications = (vendor.notifications || []).slice(-30).reverse();
+    res.json(notifications);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/vendor/notifications/read', verifyVendor, async (req, res) => {
+  try {
+    await Vendor.findByIdAndUpdate(req.vendorId, { $set: { 'notifications.$[].read': true } });
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── CSV BULK IMPORT ─────────────────────────────────────────────────────────
+
+app.post('/api/vendor/products/bulk-import', verifyVendor, async (req, res) => {
+  const { rows } = req.body; // array of product objects parsed from CSV on frontend
+  if (!Array.isArray(rows) || !rows.length) return res.status(400).json({ error: 'No rows provided' });
+  try {
+    const vendor = await Vendor.findById(req.vendorId);
+    const products = rows.map(r => ({
+      vendorId: req.vendorId,
+      vendorName: vendor.storeName,
+      name: r.name, description: r.description || '',
+      price: parseFloat(r.price) || 0, originalPrice: r.originalPrice ? parseFloat(r.originalPrice) : undefined,
+      category: r.category || 'other', stock: parseInt(r.stock) || 0,
+      sku: r.sku || '', image: r.image || '📦',
+      tags: r.tags ? r.tags.split('|').map(t => t.trim()) : []
+    })).filter(p => p.name && p.price > 0);
+    const inserted = await Product.insertMany(products);
+    res.json({ success: true, imported: inserted.length });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── PREMIUM: ADVANCED SALES REPORTS ─────────────────────────────────────────
+
+app.get('/api/vendor/reports/advanced', verifyVendor, async (req, res) => {
+  try {
+    const vendor = await Vendor.findById(req.vendorId);
+    if (vendor.plan !== 'premium') return res.status(403).json({ error: 'premium_required', message: 'Upgrade to Premium to access advanced reports' });
+
+    const { period = '30' } = req.query;
+    const days = parseInt(period);
+    const from = new Date(); from.setDate(from.getDate() - days);
+
+    const orders = await Order.find({ vendorId: req.vendorId, createdAt: { $gte: from } }).sort({ createdAt: 1 });
+
+    // Revenue by day
+    const revenueByDay = {};
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      revenueByDay[d.toISOString().slice(0, 10)] = 0;
+    }
+    orders.forEach(o => {
+      const key = o.createdAt.toISOString().slice(0, 10);
+      if (revenueByDay[key] !== undefined) revenueByDay[key] += o.vendorEarnings || 0;
+    });
+
+    // Revenue by category (via product lookup)
+    const productIds = [...new Set(orders.flatMap(o => (o.items || []).map(i => i.productId?.toString())))].filter(Boolean);
+    const products = await Product.find({ _id: { $in: productIds } }).select('_id category name price');
+    const prodMap = {};
+    products.forEach(p => { prodMap[p._id.toString()] = p; });
+
+    const revenueByCategory = {};
+    orders.forEach(o => {
+      (o.items || []).forEach(item => {
+        const p = prodMap[item.productId?.toString()];
+        if (p) {
+          revenueByCategory[p.category] = (revenueByCategory[p.category] || 0) + (item.price * item.quantity);
+        }
+      });
+    });
+
+    const totalRevenue = orders.reduce((s, o) => s + (o.vendorEarnings || 0), 0);
+    const totalOrders = orders.length;
+    const avgOrderValue = totalOrders ? (totalRevenue / totalOrders) : 0;
+    const platformFeesPaid = orders.reduce((s, o) => s + (o.platformFee || 0), 0);
+
+    res.json({
+      period: days,
+      totalRevenue, totalOrders, avgOrderValue, platformFeesPaid,
+      revenueByDay: Object.entries(revenueByDay).map(([date, revenue]) => ({ date, revenue })),
+      revenueByCategory: Object.entries(revenueByCategory).map(([cat, rev]) => ({ category: cat, revenue: rev }))
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── PREMIUM: PROMOTED LISTINGS ───────────────────────────────────────────────
+
+app.post('/api/vendor/promote', verifyVendor, async (req, res) => {
+  try {
+    const vendor = await Vendor.findById(req.vendorId);
+    if (vendor.plan !== 'premium') return res.status(403).json({ error: 'premium_required', message: 'Upgrade to Premium to promote listings' });
+    const { productId, days, budget } = req.body;
+    if (!productId || !days) return res.status(400).json({ error: 'productId and days required' });
+    const product = await Product.findById(productId);
+    if (!product || product.vendorId.toString() !== req.vendorId) return res.status(403).json({ error: 'Unauthorized' });
+    const until = new Date();
+    until.setDate(until.getDate() + parseInt(days));
+    product.sponsored = true;
+    product.sponsoredUntil = until;
+    product.sponsoredBudget = budget || 0;
+    await product.save();
+    res.json({ success: true, sponsoredUntil: until });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Public: get promoted/sponsored products
+app.get('/api/products/sponsored', async (req, res) => {
+  try {
+    const now = new Date();
+    const products = await Product.find({ sponsored: true, sponsoredUntil: { $gte: now } }).limit(8);
+    res.json(products);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Upgrade to premium (demo - in real life Stripe would gate this)
+app.post('/api/vendor/upgrade', verifyVendor, async (req, res) => {
+  try {
+    await Vendor.findByIdAndUpdate(req.vendorId, { plan: 'premium' });
+    res.json({ success: true, message: 'Upgraded to Premium! All premium features are now unlocked.' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─── SPA Fallback ─────────────────────────────────────────────────────────────

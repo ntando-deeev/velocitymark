@@ -358,3 +358,327 @@ function showToast(message, type='success') {
   t.textContent=message; c.appendChild(t);
   setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);},3000);
 }
+
+// ── STOCK MANAGEMENT ──────────────────────────────────────────────────────────
+let currentStockProductId = null;
+
+async function loadStockOverview() {
+  const res = await fetch('/api/vendor/stock', { headers: { 'Authorization': `Bearer ${vendorToken}` } });
+  const products = await res.json();
+  const el = document.getElementById('stockOverviewList');
+  if (!products.length) { el.innerHTML = '<p style="color:#999;text-align:center;padding:2rem;">No products yet. Add products first.</p>'; return; }
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:.5rem;align-items:center;font-size:.75rem;font-weight:700;color:#888;padding:0 .5rem .5rem;border-bottom:1px solid #eee;">
+      <span>PRODUCT</span><span>SKU</span><span>STOCK</span><span>STATUS</span><span>ACTION</span>
+    </div>` +
+    products.map(p => `
+    <div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:.5rem;align-items:center;padding:.65rem .5rem;border-bottom:1px solid #f5f5f5;font-size:.875rem;">
+      <div><div style="font-weight:600;">${p.image || '📦'} ${p.name}</div><div style="font-size:.75rem;color:#999;">${p.category}</div></div>
+      <div style="font-size:.78rem;color:#888;">${p.sku || '—'}</div>
+      <div style="font-weight:700;">${p.stock}</div>
+      <div>${p.status === 'out' ? '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:10px;font-size:.75rem;">Out of Stock</span>' : p.status === 'low' ? '<span style="background:#fff7ed;color:#c2410c;padding:2px 8px;border-radius:10px;font-size:.75rem;">Low Stock</span>' : '<span style="background:#f0fdf4;color:#16a34a;padding:2px 8px;border-radius:10px;font-size:.75rem;">In Stock</span>'}</div>
+      <button class="btn btn-small" onclick="openStockAdjust('${p._id}','${p.name.replace(/'/g,"\\'")}',${p.stock},${p.lowStockThreshold},'${p.sku||''}')">⚙️ Adjust</button>
+    </div>`).join('');
+}
+
+function openStockAdjust(productId, name, stock, threshold, sku) {
+  currentStockProductId = productId;
+  document.getElementById('adjustProductId').value = productId;
+  document.getElementById('adjustProductName').textContent = `📦 ${name} — Current stock: ${stock}`;
+  document.getElementById('adjustThreshold').value = threshold;
+  document.getElementById('adjustSku').value = sku;
+  document.getElementById('adjustQty').value = '';
+  document.getElementById('adjustNote').value = '';
+  document.getElementById('stockAdjustPanel').style.display = 'block';
+  document.getElementById('stockHistoryPanel').style.display = 'none';
+  document.getElementById('stockAdjustPanel').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function submitStockAdjust() {
+  const productId = document.getElementById('adjustProductId').value;
+  const type = document.getElementById('adjustType').value;
+  const qty = parseInt(document.getElementById('adjustQty').value);
+  const note = document.getElementById('adjustNote').value;
+  const lowStockThreshold = parseInt(document.getElementById('adjustThreshold').value) || 5;
+  const sku = document.getElementById('adjustSku').value;
+  if (isNaN(qty)) { showToast('Enter a valid quantity', 'error'); return; }
+
+  const endpoint = type === 'opening' ? '/api/vendor/stock/opening' : '/api/vendor/stock/adjust';
+  const body = type === 'opening' ? { productId, qty, note, lowStockThreshold, sku } : { productId, type, qty, note };
+
+  const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${vendorToken}` }, body: JSON.stringify(body) });
+  const result = await res.json();
+  if (result.success) {
+    showToast(`Stock updated! New stock: ${result.stock}`, 'success');
+    document.getElementById('stockAdjustPanel').style.display = 'none';
+    loadStockOverview();
+  } else showToast(result.error, 'error');
+}
+
+async function loadStockHistory() {
+  if (!currentStockProductId) return;
+  const res = await fetch(`/api/vendor/stock/${currentStockProductId}/history`, { headers: { 'Authorization': `Bearer ${vendorToken}` } });
+  const logs = await res.json();
+  const panel = document.getElementById('stockHistoryPanel');
+  const list = document.getElementById('stockHistoryList');
+  panel.style.display = 'block';
+  list.innerHTML = logs.length
+    ? logs.map(l => `<div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid #f5f5f5;font-size:.82rem;">
+        <span>${l.type === 'opening' ? '📌' : l.type === 'add' ? '➕' : l.type === 'remove' ? '➖' : l.type === 'sale' ? '🛒' : '🔧'} <strong>${l.type.charAt(0).toUpperCase() + l.type.slice(1)}</strong> ${l.qty} units</span>
+        <span style="color:#888;">${l.stockBefore} → ${l.stockAfter}</span>
+        <span style="color:#aaa;">${new Date(l.createdAt).toLocaleDateString()}</span>
+      </div>`).join('')
+    : '<p style="color:#999;font-size:.85rem;">No history yet.</p>';
+}
+
+// CSV Bulk Import
+function handleCSVImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const text = e.target.result;
+    const lines = text.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const rows = lines.slice(1).map(line => {
+      const values = line.split(',');
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = (values[i] || '').trim().replace(/^"|"$/g, ''); });
+      return obj;
+    }).filter(r => r.name);
+    if (!rows.length) { showToast('No valid rows found in CSV', 'error'); return; }
+    const res = await fetch('/api/vendor/products/bulk-import', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${vendorToken}` },
+      body: JSON.stringify({ rows })
+    });
+    const result = await res.json();
+    if (result.success) { showToast(`✅ Imported ${result.imported} products!`, 'success'); loadMyProducts(); loadStockOverview(); loadProducts('all'); }
+    else showToast(result.error, 'error');
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ── DISCOUNT CODES ────────────────────────────────────────────────────────────
+async function loadCoupons() {
+  const res = await fetch('/api/vendor/coupons', { headers: { 'Authorization': `Bearer ${vendorToken}` } });
+  const coupons = await res.json();
+  const el = document.getElementById('couponList');
+  if (!coupons.length) { el.innerHTML = '<p style="color:#999;text-align:center;padding:1.5rem;">No discount codes yet.</p>'; return; }
+  el.innerHTML = coupons.map(c => `
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#f9fafb;border:1px solid #eee;border-radius:8px;padding:.75rem;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem;">
+      <div>
+        <div style="font-weight:700;font-family:monospace;font-size:1rem;color:#1e40af;">${c.code}</div>
+        <div style="font-size:.78rem;color:#888;">${c.type === 'percent' ? c.value + '% off' : '$' + c.value + ' off'} ${c.minOrder ? '· Min $' + c.minOrder : ''} ${c.maxUses ? '· Max ' + c.maxUses + ' uses' : '· Unlimited'} ${c.expiresAt ? '· Expires ' + new Date(c.expiresAt).toLocaleDateString() : ''}</div>
+        <div style="font-size:.75rem;color:#aaa;">Used ${c.usedCount} time${c.usedCount !== 1 ? 's' : ''}</div>
+      </div>
+      <div style="display:flex;gap:.4rem;align-items:center;">
+        <span style="background:${c.active ? '#f0fdf4' : '#f9fafb'};color:${c.active ? '#16a34a' : '#aaa'};border:1px solid ${c.active ? '#bbf7d0' : '#e5e7eb'};padding:2px 10px;border-radius:10px;font-size:.75rem;">${c.active ? 'Active' : 'Paused'}</span>
+        <button class="btn btn-small" onclick="toggleCoupon('${c._id}', this)">${c.active ? 'Pause' : 'Activate'}</button>
+        <button class="btn btn-small" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;" onclick="deleteCoupon('${c._id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+async function createCoupon() {
+  const data = {
+    code: document.getElementById('couponCode').value,
+    type: document.getElementById('couponType').value,
+    value: parseFloat(document.getElementById('couponValue').value),
+    minOrder: parseFloat(document.getElementById('couponMinOrder').value) || 0,
+    maxUses: parseInt(document.getElementById('couponMaxUses').value) || 0,
+    expiresAt: document.getElementById('couponExpiry').value || null
+  };
+  if (!data.code || !data.value) { showToast('Code and value required', 'error'); return; }
+  const res = await fetch('/api/vendor/coupons', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${vendorToken}` }, body: JSON.stringify(data) });
+  const result = await res.json();
+  if (result.success) { showToast('Coupon created!', 'success'); document.getElementById('couponCode').value = ''; loadCoupons(); }
+  else showToast(result.error, 'error');
+}
+
+async function toggleCoupon(id, btn) {
+  const res = await fetch(`/api/vendor/coupons/${id}/toggle`, { method: 'PUT', headers: { 'Authorization': `Bearer ${vendorToken}` } });
+  const result = await res.json();
+  if (result.success) { showToast(result.active ? 'Coupon activated' : 'Coupon paused', 'success'); loadCoupons(); }
+}
+
+async function deleteCoupon(id) {
+  if (!confirm('Delete this coupon?')) return;
+  const res = await fetch(`/api/vendor/coupons/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${vendorToken}` } });
+  const result = await res.json();
+  if (result.success) { showToast('Coupon deleted', 'success'); loadCoupons(); }
+}
+
+// Coupon at checkout
+let appliedDiscount = 0;
+async function applyCoupon() {
+  const code = document.getElementById('couponInput').value.trim();
+  const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+  const res = await fetch('/api/coupons/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, subtotal: total }) });
+  const result = await res.json();
+  const el = document.getElementById('couponResult');
+  if (result.success) {
+    appliedDiscount = result.coupon.discount;
+    el.innerHTML = `<span style="color:#16a34a;font-weight:600;">✅ ${result.coupon.code} applied! You save $${appliedDiscount.toFixed(2)}</span>`;
+    document.getElementById('checkoutTotal').textContent = '$' + Math.max(0, total - appliedDiscount).toFixed(2);
+  } else {
+    el.innerHTML = `<span style="color:#dc2626;">❌ ${result.error}</span>`;
+  }
+}
+
+function goToCheckout() {
+  if (!cart.length) { showToast('Cart is empty', 'error'); return; }
+  toggleCart();
+  appliedDiscount = 0;
+  document.getElementById('couponResult').innerHTML = '';
+  document.getElementById('couponInput').value = '';
+  const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+  document.getElementById('checkoutTotal').textContent = '$' + total.toFixed(2);
+  showModal('checkoutModal');
+}
+
+// ── NOTIFICATIONS ─────────────────────────────────────────────────────────────
+async function loadNotifications() {
+  const res = await fetch('/api/vendor/notifications', { headers: { 'Authorization': `Bearer ${vendorToken}` } });
+  const notifications = await res.json();
+  const el = document.getElementById('notificationsList');
+  if (!notifications.length) { el.innerHTML = '<p style="color:#999;text-align:center;padding:2rem;">No alerts yet.</p>'; return; }
+  el.innerHTML = notifications.map(n => `
+    <div style="display:flex;gap:.75rem;align-items:flex-start;padding:.75rem;border-bottom:1px solid #f5f5f5;${n.read ? 'opacity:.6' : 'background:#fffbeb;border-radius:8px;margin-bottom:.3rem;'}">
+      <span style="font-size:1.2rem;">${n.type === 'low_stock' ? '⚠️' : n.type === 'order' ? '🧾' : n.type === 'review' ? '⭐' : '🔔'}</span>
+      <div style="flex:1"><div style="font-size:.875rem;">${n.message}</div><div style="font-size:.75rem;color:#aaa;">${new Date(n.createdAt).toLocaleString()}</div></div>
+      ${n.read ? '' : '<span style="background:#f59e0b;color:white;font-size:.65rem;padding:2px 6px;border-radius:10px;white-space:nowrap;">New</span>'}
+    </div>`).join('');
+}
+
+async function markAllRead() {
+  await fetch('/api/vendor/notifications/read', { method: 'PUT', headers: { 'Authorization': `Bearer ${vendorToken}` } });
+  showToast('All notifications marked as read', 'success');
+  loadNotifications();
+}
+
+// ── PREMIUM: ADVANCED REPORTS ─────────────────────────────────────────────────
+let reportData = null;
+async function loadAdvancedReports() {
+  const gateEl = document.getElementById('premiumGateReports');
+  const contentEl = document.getElementById('reportsContent');
+  const period = document.getElementById('reportPeriod')?.value || 30;
+  const res = await fetch(`/api/vendor/reports/advanced?period=${period}`, { headers: { 'Authorization': `Bearer ${vendorToken}` } });
+  const data = await res.json();
+  if (data.error === 'premium_required') {
+    gateEl.innerHTML = renderPremiumGate('Advanced Reports', 'Get monthly/weekly revenue breakdowns, profit margins, category analysis, and CSV exports.');
+    contentEl.style.display = 'none'; return;
+  }
+  gateEl.innerHTML = '';
+  contentEl.style.display = 'block';
+  reportData = data;
+  document.getElementById('reportStats').innerHTML = `
+    <div class="stat-card"><h3>$${data.totalRevenue.toFixed(2)}</h3><p>Revenue (${data.period}d)</p></div>
+    <div class="stat-card"><h3>${data.totalOrders}</h3><p>Orders</p></div>
+    <div class="stat-card"><h3>$${data.avgOrderValue.toFixed(2)}</h3><p>Avg Order Value</p></div>
+    <div class="stat-card"><h3 style="color:#ef4444">$${data.platformFeesPaid.toFixed(2)}</h3><p>Platform Fees</p></div>`;
+  const days = data.revenueByDay || [];
+  const maxRev = Math.max(...days.map(d => d.revenue), 1);
+  document.getElementById('reportChart').innerHTML = days.map(d => {
+    const pct = Math.max((d.revenue / maxRev) * 100, 2);
+    return `<div class="bar-col"><div class="bar-val">$${d.revenue.toFixed(0)}</div><div class="bar" style="height:${pct}%"></div><div class="bar-label">${d.date.slice(5)}</div></div>`;
+  }).join('');
+  const cats = data.revenueByCategory || [];
+  document.getElementById('reportByCategory').innerHTML = cats.length
+    ? cats.sort((a, b) => b.revenue - a.revenue).map(c => `
+        <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid #f5f5f5;font-size:.875rem;">
+          <span style="text-transform:capitalize;">${c.category}</span>
+          <span style="font-weight:700;color:var(--primary);">$${c.revenue.toFixed(2)}</span>
+        </div>`).join('')
+    : '<p style="color:#999;font-size:.85rem;">No category data yet.</p>';
+}
+
+function exportReportCSV() {
+  if (!reportData) return;
+  const rows = [['Date', 'Revenue'], ...reportData.revenueByDay.map(d => [d.date, d.revenue.toFixed(2)])];
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `velocitymark-report-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ── PREMIUM: PROMOTED LISTINGS ────────────────────────────────────────────────
+async function loadPromote() {
+  const gateEl = document.getElementById('premiumGatePromote');
+  const contentEl = document.getElementById('promoteContent');
+  // Check plan by trying to load analytics (it includes vendor data)
+  const res = await fetch('/api/vendor/reports/advanced?period=7', { headers: { 'Authorization': `Bearer ${vendorToken}` } });
+  const data = await res.json();
+  if (data.error === 'premium_required') {
+    gateEl.innerHTML = renderPremiumGate('Promoted Listings', 'Boost your products to the top of the marketplace with a Sponsored badge — up to 5x more clicks.');
+    contentEl.style.display = 'none'; return;
+  }
+  gateEl.innerHTML = '';
+  contentEl.style.display = 'block';
+  // Load products for select
+  const pRes = await fetch('/api/vendor/products', { headers: { 'Authorization': `Bearer ${vendorToken}` } });
+  const products = await pRes.json();
+  document.getElementById('promoteProductSelect').innerHTML = products.map(p => `<option value="${p._id}">${p.image || '📦'} ${p.name} — $${p.price}</option>`).join('');
+  // Load sponsored products
+  const sRes = await fetch('/api/products/sponsored');
+  const sponsored = await sRes.json();
+  const mySponsored = sponsored.filter(p => p.vendorId?.toString() === vendorId);
+  document.getElementById('sponsoredList').innerHTML = mySponsored.length
+    ? mySponsored.map(p => `<div style="display:flex;justify-content:space-between;align-items:center;background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:.75rem;margin-bottom:.5rem;"><span>${p.image} ${p.name}</span><span style="font-size:.8rem;color:#92400e;">Sponsored until ${new Date(p.sponsoredUntil).toLocaleDateString()}</span></div>`).join('')
+    : '<p style="color:#999;font-size:.85rem;">No active promotions.</p>';
+}
+
+async function submitPromotion() {
+  const productId = document.getElementById('promoteProductSelect').value;
+  const days = document.getElementById('promoteDays').value;
+  const budget = document.getElementById('promoteBudget').value;
+  const res = await fetch('/api/vendor/promote', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${vendorToken}` }, body: JSON.stringify({ productId, days: parseInt(days), budget: parseFloat(budget) || 0 }) });
+  const result = await res.json();
+  if (result.success) { showToast(`Product promoted until ${new Date(result.sponsoredUntil).toLocaleDateString()}!`, 'success'); loadPromote(); loadSponsoredProducts(); }
+  else showToast(result.error, 'error');
+}
+
+// Premium gate UI
+function renderPremiumGate(feature, description) {
+  return `<div style="text-align:center;padding:2rem;background:linear-gradient(135deg,#1e1b4b,#3730a3);border-radius:16px;color:white;">
+    <div style="font-size:3rem;margin-bottom:.75rem;">👑</div>
+    <h3 style="margin-bottom:.5rem;">${feature} — Premium Feature</h3>
+    <p style="opacity:.8;font-size:.9rem;margin-bottom:1.5rem;">${description}</p>
+    <button class="btn" style="background:#fbbf24;color:#1e1b4b;font-weight:700;padding:.75rem 2rem;border-radius:10px;font-size:1rem;" onclick="upgradeToPremium()">⚡ Upgrade to Premium</button>
+    <p style="font-size:.75rem;opacity:.6;margin-top:.75rem;">Demo: Click upgrade to unlock instantly</p>
+  </div>`;
+}
+
+async function upgradeToPremium() {
+  const res = await fetch('/api/vendor/upgrade', { method: 'POST', headers: { 'Authorization': `Bearer ${vendorToken}` } });
+  const result = await res.json();
+  if (result.success) { showToast('👑 ' + result.message, 'success'); setTimeout(() => { loadAdvancedReports(); loadPromote(); }, 500); }
+  else showToast(result.error, 'error');
+}
+
+// Load sponsored products on homepage
+async function loadSponsoredProducts() {
+  try {
+    const res = await fetch('/api/products/sponsored');
+    const products = await res.json();
+    const section = document.getElementById('sponsored');
+    if (!products.length) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    document.getElementById('sponsoredGrid').innerHTML = products.map(p => `
+      <div class="product-card" style="border:2px solid #fde68a;">
+        <div style="background:#fde68a;color:#92400e;font-size:.7rem;font-weight:700;padding:3px 10px;text-align:center;border-radius:4px 4px 0 0;">🚀 SPONSORED</div>
+        <div class="product-image">${p.image || '📦'}</div>
+        <div class="product-info">
+          <div class="product-vendor">${p.vendorName}</div>
+          <div class="product-name">${p.name}</div>
+          <div class="product-price">$${p.price}</div>
+          <div class="product-rating">⭐ ${p.rating} (${p.reviews})</div>
+          <button class="add-to-cart-btn" onclick="addToCart('${p._id}','${p.name.replace(/'/g,"\\'")}',${p.price},'${(p.vendorName||'').replace(/'/g,"\\'")}')">Add to Cart</button>
+        </div>
+      </div>`).join('');
+  } catch(err) { console.error(err); }
+}
+
+// Call on init
+document.addEventListener('DOMContentLoaded', () => { loadSponsoredProducts(); });
