@@ -4,6 +4,9 @@
   "description": "Global online marketing platform by Mr Ntando Ofc",
   "main": "server.js",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js"
@@ -14,14 +17,6 @@
     "helmet": "^7.0.0",
     "compression": "^1.7.4",
     "dotenv": "^16.3.1",
-    "nodemailer": "^6.9.7",
-    "stripe": "^14.8.0",
-    "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.1.2",
-    "mongoose": "^8.0.0",
-    "joi": "^17.11.0"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+    "mongoose": "^8.0.0"
+  }
 }
