@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: velocitymark
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+    autoDeploy: true
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: max-age=3600
+      - path: /api/*
+        name: Cache-Control
+        value: no-cache

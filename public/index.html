@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VelocityMark - Global Marketing Platform by Mr Ntando Ofc</title>
+    <meta name="description" content="Premium digital marketing services for global businesses. Strategy, SEO, PPC, social media, and brand development.">
+    <meta name="keywords" content="digital marketing, SEO, PPC, brand strategy, global marketing platform">
+    <meta name="author" content="Mr Ntando Ofc">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230066ff'/><text x='50' y='60' font-size='60' font-weight='bold' text-anchor='middle' fill='white'>VM</text></svg>">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">⚡ VelocityMark</span>
+                <p class="tagline">by Mr Ntando Ofc</p>
+            </div>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="#hero" class="nav-link">Home</a></li>
+                <li><a href="#services" class="nav-link">Services</a></li>
+                <li><a href="#cases" class="nav-link">Case Studies</a></li>
+                <li><a href="#team" class="nav-link">Team</a></li>
+                <li><a href="#contact" class="nav-link cta-btn">Get Started</a></li>
+            </ul>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Accelerate Your Global Growth</h1>
+                <p class="hero-subtitle">Premium digital marketing strategies for brands that demand velocity and precision</p>
+                <div class="hero-cta">
+                    <button class="btn btn-primary" onclick="scrollTo('#contact')">Book Strategy Call</button>
+                    <button class="btn btn-secondary" onclick="scrollTo('#services')">Explore Services</button>
+                </div>
+                <p class="trust-text">Trusted by 200+ global brands across 45+ countries</p>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <h3>340%</h3>
+                    <p>Avg Revenue Growth</p>
+                </div>
+                <div class="stat">
+                    <h3>2,500+</h3>
+                    <p>Qualified Leads</p>
+                </div>
+                <div class="stat">
+                    <h3>45+</h3>
+                    <p>Countries Served</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="services">
+        <div class="container">
+            <h2>Our Services</h2>
+            <p class="section-subtitle">Comprehensive digital marketing solutions for every growth stage</p>
+            <div class="services-grid" id="servicesGrid">
+                <!-- Dynamically loaded -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose VelocityMark -->
+    <section class="why-velocitymark">
+        <div class="container">
+            <h2>Why VelocityMark</h2>
+            <div class="features-grid">
+                <div class="feature">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Data-Driven Strategy</h3>
+                    <p>Every decision backed by market research, competitive analysis, and performance metrics</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🌍</div>
+                    <h3>Global Expertise</h3>
+                    <p>Multi-market experience across 45+ countries and 8+ languages</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Speed to Results</h3>
+                    <p>Rapid implementation with measurable results in 30-90 days</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">💰</div>
+                    <h3>ROI Focused</h3>
+                    <p>Transparent pricing and guaranteed ROI improvements or money back</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">👥</div>
+                    <h3>Dedicated Team</h3>
+                    <p>Your own marketing team with strategy, execution, and creative specialists</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <h3>Real-Time Dashboards</h3>
+                    <p>Live analytics, performance tracking, and monthly strategy reviews</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Case Studies -->
+    <section id="cases" class="case-studies">
+        <div class="container">
+            <h2>Success Stories</h2>
+            <p class="section-subtitle">Real results from real clients</p>
+            <div class="cases-grid" id="casesGrid">
+                <!-- Dynamically loaded -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section id="team" class="team">
+        <div class="container">
+            <h2>Meet the Team</h2>
+            <p class="section-subtitle">Industry veterans dedicated to your growth</p>
+            <div class="team-grid" id="teamGrid">
+                <!-- Dynamically loaded -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing">
+        <div class="container">
+            <h2>Simple, Transparent Pricing</h2>
+            <p class="section-subtitle">Flexible packages for businesses of all sizes</p>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Starter</h3>
+                    <p class="price">Custom</p>
+                    <p class="price-desc">1-2 Services</p>
+                    <ul>
+                        <li>✓ Dedicated account manager</li>
+                        <li>✓ Monthly reporting</li>
+                        <li>✓ 24/5 support</li>
+                        <li>✗ Custom integrations</li>
+                    </ul>
+                    <button class="btn btn-outline" onclick="scrollTo('#contact')">Get Quote</button>
+                </div>
+                <div class="pricing-card featured">
+                    <div class="badge">Most Popular</div>
+                    <h3>Growth</h3>
+                    <p class="price">Custom</p>
+                    <p class="price-desc">3-4 Services</p>
+                    <ul>
+                        <li>✓ Dedicated account manager</li>
+                        <li>✓ Weekly performance reviews</li>
+                        <li>✓ 24/7 support</li>
+                        <li>✓ Custom strategy sessions</li>
+                    </ul>
+                    <button class="btn btn-primary" onclick="scrollTo('#contact')">Get Quote</button>
+                </div>
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <p class="price">Custom</p>
+                    <p class="price-desc">All Services</p>
+                    <ul>
+                        <li>✓ Dedicated strategy team</li>
+                        <li>✓ Daily optimization</li>
+                        <li>✓ 24/7 premium support</li>
+                        <li>✓ Full API access</li>
+                    </ul>
+                    <button class="btn btn-outline" onclick="scrollTo('#contact')">Contact Sales</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2>Start Your Growth Journey</h2>
+            <p class="section-subtitle">Let's accelerate your business together</p>
+            <div class="contact-wrapper">
+                <form class="contact-form" id="contactForm">
+                    <div class="form-group">
+                        <label for="name">Your Name *</label>
+                        <input type="text" id="name" name="name" required placeholder="John Smith">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Business Email *</label>
+                        <input type="email" id="email" name="email" required placeholder="john@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="company">Company Name</label>
+                        <input type="text" id="company" name="company" placeholder="Your Company">
+                    </div>
+                    <div class="form-group">
+                        <label for="service">Service Interested In *</label>
+                        <select id="service" name="service" required>
+                            <option value="">Select a service</option>
+                            <option value="Digital Strategy">Digital Strategy Consulting</option>
+                            <option value="Social Media">Social Media Management</option>
+                            <option value="SEO">SEO & Content Marketing</option>
+                            <option value="PPC">PPC Advertising</option>
+                            <option value="Email">Email Marketing</option>
+                            <option value="Brand">Brand Development</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="budget">Monthly Budget *</label>
+                        <select id="budget" name="budget" required>
+                            <option value="">Select budget range</option>
+                            <option value="$1k-$5k">$1,000 - $5,000</option>
+                            <option value="$5k-$10k">$5,000 - $10,000</option>
+                            <option value="$10k-$25k">$10,000 - $25,000</option>
+                            <option value="$25k+">$25,000+</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Tell us about your goals *</label>
+                        <textarea id="message" name="message" required placeholder="Describe your marketing challenges and goals..." rows="5"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-large">Get Your Free Strategy Session</button>
+                    <p class="form-note">No obligation. We'll review your business and send a custom growth plan within 24 hours.</p>
+                </form>
+                <div class="contact-info">
+                    <div class="info-box">
+                        <h3>📞 Quick Response</h3>
+                        <p>We respond to all inquiries within 2 hours</p>
+                    </div>
+                    <div class="info-box">
+                        <h3>🌍 Global Coverage</h3>
+                        <p>24/7 support across all time zones</p>
+                    </div>
+                    <div class="info-box">
+                        <h3>✨ Free Consultation</h3>
+                        <p>$500 strategy session included free</p>
+                    </div>
+                    <div class="info-box">
+                        <h3>📊 Guaranteed Results</h3>
+                        <p>30-day ROI guarantee or money back</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter -->
+    <section class="newsletter">
+        <div class="container">
+            <h2>Stay Ahead of Marketing Trends</h2>
+            <p>Weekly insights on growth strategies, digital trends, and industry secrets</p>
+            <form class="newsletter-form" id="newsletterForm">
+                <input type="email" placeholder="Your email" required>
+                <button type="submit" class="btn btn-primary">Subscribe</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>VelocityMark</h4>
+                    <p>Global marketing platform created by Mr Ntando Ofc. Accelerating businesses worldwide.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Services</h4>
+                    <ul>
+                        <li><a href="#services">Digital Strategy</a></li>
+                        <li><a href="#services">Social Media</a></li>
+                        <li><a href="#services">SEO</a></li>
+                        <li><a href="#services">Advertising</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="#team">About Us</a></li>
+                        <li><a href="#cases">Case Studies</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Follow Us</h4>
+                    <div class="social-links">
+                        <a href="#">Twitter</a>
+                        <a href="#">LinkedIn</a>
+                        <a href="#">Facebook</a>
+                        <a href="#">Instagram</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 VelocityMark. Created by Mr Ntando Ofc. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
