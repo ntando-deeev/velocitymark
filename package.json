@@ -1,7 +1,7 @@
 {
   "name": "velocitymark",
-  "version": "2.0.0",
-  "description": "Global E-Commerce Platform by Mr Ntando Ofc",
+  "version": "3.0.0",
+  "description": "Global Multi-Vendor Marketplace by Mr Ntando Ofc",
   "main": "server.js",
   "type": "module",
   "engines": {
@@ -18,6 +18,8 @@
     "compression": "^1.7.4",
     "dotenv": "^16.3.1",
     "mongoose": "^8.0.0",
-    "stripe": "^14.8.0"
+    "stripe": "^14.8.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
   }
 }
