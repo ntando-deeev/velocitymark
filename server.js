@@ -61,6 +61,7 @@ const productSchema = new mongoose.Schema({
   originalPrice:  { type: Number },
   category:       { type: String },
   image:          { type: String },
+  images:         [{ type: String }],   // Gallery images (up to 6)
   stock:          { type: Number, default: 999 },
   rating:         { type: Number, default: 4.5 },
   reviews:        { type: Number, default: 0 },
@@ -266,7 +267,7 @@ app.get('/api/vendor/dashboard', verifyVendor, async (req, res) => {
 // ─── PRODUCTS (VENDOR) ────────────────────────────────────────────────────────
 
 app.post('/api/products/upload', verifyVendor, async (req, res) => {
-  const { name, description, price, originalPrice, category, stock, tags, image } = req.body;
+  const { name, description, price, originalPrice, category, stock, tags, image, images } = req.body;
 
   if (!name || !price || !category) {
     return res.status(400).json({ error: 'Name, price, and category required' });
@@ -274,7 +275,12 @@ app.post('/api/products/upload', verifyVendor, async (req, res) => {
 
   try {
     const vendor = await Vendor.findById(req.vendorId);
-    
+
+    // Build gallery: primary image first, then extras (max 6 total)
+    const allImages = [image, ...(Array.isArray(images) ? images : [])]
+      .filter(img => img && typeof img === 'string' && img.trim())
+      .slice(0, 6);
+
     const product = await Product.create({
       vendorId: req.vendorId,
       vendorName: vendor.storeName,
@@ -285,7 +291,8 @@ app.post('/api/products/upload', verifyVendor, async (req, res) => {
       category,
       stock: stock || 999,
       tags: tags || [],
-      image: image || '📦'
+      image: allImages[0] || '📦',
+      images: allImages
     });
 
     res.json({
@@ -314,9 +321,20 @@ app.put('/api/products/:id', verifyVendor, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
+    // Handle gallery images on update
+    if (req.body.image || req.body.images) {
+      const allImages = [req.body.image, ...(Array.isArray(req.body.images) ? req.body.images : [])]
+        .filter(img => img && typeof img === 'string' && img.trim())
+        .slice(0, 6);
+      if (allImages.length) {
+        req.body.image  = allImages[0];
+        req.body.images = allImages;
+      }
+    }
+
     Object.assign(product, req.body);
     await product.save();
-    
+
     res.json({ success: true, product });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -112,18 +112,17 @@ async function openProduct(idOrName){
     let p=allProducts.find(x=>x._id===idOrName||encodeURIComponent(x.name)===idOrName);
     if(!p){const res=await fetch(`/api/products/${idOrName}`);p=await res.json();}
     if(p&&p._id&&typeof trackRecentlyViewed==='function') trackRecentlyViewed(p);
-    const imgHtml=p.image&&p.image.startsWith('http')?`<img src="${p.image}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<div style=\\'font-size:4rem;display:flex;align-items:center;justify-content:center;height:100%\\'>${(!p.image||p.image.startsWith('http'))?'📦':p.image}</div>'">`:`<div style="font-size:4rem;display:flex;align-items:center;justify-content:center;height:100%">${p.image||'📦'}</div>`;
     const inWish=wishlist.some(w=>w._id===p._id||w.name===p.name);
     const pid=JSON.stringify(p).replace(/"/g,'&quot;');
     content.innerHTML=`
       <div class="product-detail">
-        <div class="product-detail-img">${imgHtml}</div>
+        <div class="product-detail-img" id="productGalleryMount-${p._id||'x'}"></div>
         <div class="product-detail-info">
           <div class="product-detail-badge">${p.category||''} ${p.vendorName?'· by '+p.vendorName:''}</div>
           <div class="product-detail-name">${p.name}</div>
           <div class="product-detail-rating"><span style="color:#f59e0b">★★★★★</span><span>${p.rating||'4.5'}</span><span style="color:var(--text-muted)">(${p.reviews||0} reviews)</span></div>
-          <div class="product-detail-price">$${Number(p.price).toFixed(2)}</div>
-          ${p.originalPrice?`<div class="product-detail-original">Was $${Number(p.originalPrice).toFixed(2)}</div>`:''}
+          <div class="product-detail-price">${Number(p.price).toFixed(2)}</div>
+          ${p.originalPrice?`<div class="product-detail-original">Was ${Number(p.originalPrice).toFixed(2)}</div>`:''}
           <div class="product-detail-desc">${p.description||'No description available.'}</div>
           <div id="paymentPlansContainer-${p._id||'x'}"></div>
           <div class="product-detail-actions">
@@ -147,6 +146,12 @@ async function openProduct(idOrName){
     if(p.vendorId)loadVendorContact(p.vendorId,`vendorContact-${p._id||'x'}`);
     if(p._id)loadProductReviews(p._id,`reviewsList-${p._id}`);
     if(p._id)loadBuyerPaymentPlans(p._id,p.price,`paymentPlansContainer-${p._id||'x'}`);
+    // Render image gallery
+    const galleryMount=document.getElementById(`productGalleryMount-${p._id||'x'}`);
+    if(galleryMount&&typeof renderProductGallery==='function'){
+      const imgs=Array.isArray(p.images)&&p.images.length?p.images:[p.image||'📦'];
+      renderProductGallery(imgs,galleryMount);
+    }
   }catch(e){content.innerHTML='<p style="color:var(--text-muted);padding:2rem">Could not load product details.</p>';}
 }
 
@@ -629,6 +634,7 @@ async function uploadProduct(){
       category,stock:parseInt(document.getElementById('prodStock')?.value)||999,
       sku:document.getElementById('prodSku')?.value,
       image:document.getElementById('prodImage')?.value||'📦',
+      images:typeof collectGalleryImages==='function'?collectGalleryImages():[],
       description:document.getElementById('prodDesc')?.value,
       tags:(document.getElementById('prodTags')?.value||'').split(',').map(t=>t.trim()).filter(Boolean)
     })});
@@ -677,6 +683,8 @@ function editProduct(id,p){
   if(document.getElementById('prodTags'))document.getElementById('prodTags').value=(p.tags||[]).join(', ');
   // Load existing payment plans into the form
   if(typeof loadPaymentPlansIntoForm==='function') loadPaymentPlansIntoForm(p.paymentPlans||[]);
+  // Load existing gallery images into the form
+  if(typeof loadGalleryIntoForm==='function') loadGalleryIntoForm(p.images||[]);
   // Change button to update
   const btn=document.querySelector('#addProductForm .btn-primary');
   if(btn){btn.textContent='Update Product';btn.onclick=()=>updateProduct(id);}
@@ -689,6 +697,7 @@ async function updateProduct(id){
       originalPrice:parseFloat(document.getElementById('prodOriginal')?.value)||undefined,
       category:document.getElementById('prodCategory')?.value,stock:parseInt(document.getElementById('prodStock')?.value)||999,
       sku:document.getElementById('prodSku')?.value,image:document.getElementById('prodImage')?.value||'📦',
+      images:typeof collectGalleryImages==='function'?collectGalleryImages():[],
       description:document.getElementById('prodDesc')?.value,
       tags:(document.getElementById('prodTags')?.value||'').split(',').map(t=>t.trim()).filter(Boolean)
     })});

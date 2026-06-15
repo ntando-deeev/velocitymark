@@ -463,3 +463,195 @@ function buildPlanSummary(plan, price) {
   const note = plan.note ? `<div class="buyer-plan-note">ℹ️ ${plan.note}</div>` : '';
   return `<div class="buyer-plan-summary">${rows}</div>${note}`;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PRODUCT IMAGE GALLERY
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * renderProductGallery(images, container)
+ * Called from marketplace.js when rendering the product detail modal.
+ * images: string[] — array of image URLs (or emoji fallbacks)
+ * container: DOM element to inject the gallery into
+ */
+window.renderProductGallery = function(images, container) {
+  if (!container) return;
+
+  // Filter to real URLs only; keep emoji fallback if nothing else
+  const imgs = (images || []).filter(Boolean);
+  if (!imgs.length) imgs.push('📦');
+
+  let currentIdx = 0;
+
+  function isUrl(s) { return s && (s.startsWith('http') || s.startsWith('//')); }
+
+  function mainContent(src) {
+    if (isUrl(src)) {
+      return `<img class="gallery-main-img" id="galleryMainImg" src="${src}"
+                   alt="Product image"
+                   onerror="this.style.display='none';document.getElementById('galleryMainEmoji').style.display='flex'">
+              <div class="gallery-main-emoji" id="galleryMainEmoji" style="display:none">📦</div>`;
+    }
+    return `<div class="gallery-main-emoji" id="galleryMainEmoji">${src}</div>`;
+  }
+
+  function thumbContent(src, i) {
+    if (isUrl(src)) {
+      return `<img src="${src}" alt="Thumb ${i+1}" onerror="this.parentElement.innerHTML='📦'">`;
+    }
+    return src;
+  }
+
+  const showArrows = imgs.length > 1;
+
+  container.innerHTML = `
+    <div class="product-gallery">
+      <div class="gallery-main-wrap" id="galleryMainWrap" onclick="galleryZoom(${JSON.stringify(imgs).replace(/"/g,'&quot;')}, ${0})">
+        ${mainContent(imgs[0])}
+        ${showArrows ? `
+          <button class="gallery-arrow prev" onclick="event.stopPropagation();galleryGo(-1)" aria-label="Previous">&#8249;</button>
+          <button class="gallery-arrow next" onclick="event.stopPropagation();galleryGo(1)"  aria-label="Next">&#8250;</button>
+        ` : ''}
+        ${imgs.length > 1 ? `<div class="gallery-counter" id="galleryCounter">1 / ${imgs.length}</div>` : ''}
+      </div>
+      ${imgs.length > 1 ? `
+        <div class="gallery-thumbs" id="galleryThumbs">
+          ${imgs.map((src, i) => `
+            <div class="gallery-thumb ${i===0?'active':''}" onclick="gallerySetIdx(${i})" data-idx="${i}">
+              ${thumbContent(src, i)}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  // Store state on element for cross-function access
+  container._galleryImgs = imgs;
+  container._galleryIdx  = 0;
+  window._activeGalleryContainer = container;
+
+  // Keyboard navigation
+  document.addEventListener('keydown', galleryKeyHandler);
+};
+
+window.galleryGo = function(dir) {
+  const c = window._activeGalleryContainer;
+  if (!c) return;
+  const imgs = c._galleryImgs;
+  c._galleryIdx = ((c._galleryIdx + dir) + imgs.length) % imgs.length;
+  galleryUpdateDisplay(c);
+};
+
+window.gallerySetIdx = function(idx) {
+  const c = window._activeGalleryContainer;
+  if (!c) return;
+  c._galleryIdx = idx;
+  galleryUpdateDisplay(c);
+};
+
+function galleryUpdateDisplay(c) {
+  const imgs = c._galleryImgs;
+  const idx  = c._galleryIdx;
+  const src  = imgs[idx];
+
+  // Update main image
+  const mainImg   = c.querySelector('#galleryMainImg');
+  const mainEmoji = c.querySelector('#galleryMainEmoji');
+  if (mainImg && src && src.startsWith('http')) {
+    mainImg.style.opacity = '0';
+    setTimeout(() => {
+      mainImg.src = src;
+      mainImg.style.display = '';
+      if (mainEmoji) mainEmoji.style.display = 'none';
+      mainImg.style.opacity = '1';
+    }, 120);
+  } else if (mainEmoji) {
+    if (mainImg) mainImg.style.display = 'none';
+    mainEmoji.textContent = src || '📦';
+    mainEmoji.style.display = 'flex';
+  }
+
+  // Update counter
+  const counter = c.querySelector('#galleryCounter');
+  if (counter) counter.textContent = `${idx + 1} / ${imgs.length}`;
+
+  // Update zoom onclick
+  const wrap = c.querySelector('#galleryMainWrap');
+  if (wrap) wrap.onclick = (e) => {
+    if (e.target.classList.contains('gallery-arrow')) return;
+    galleryZoom(imgs, idx);
+  };
+
+  // Update thumbnails
+  c.querySelectorAll('.gallery-thumb').forEach(t => {
+    t.classList.toggle('active', parseInt(t.dataset.idx) === idx);
+  });
+}
+
+function galleryKeyHandler(e) {
+  const overlay = document.getElementById('galleryZoomOverlay');
+  if (overlay) {
+    if (e.key === 'Escape')      closeGalleryZoom();
+    if (e.key === 'ArrowRight')  galleryZoomGo(1);
+    if (e.key === 'ArrowLeft')   galleryZoomGo(-1);
+    return;
+  }
+  if (e.key === 'ArrowRight') galleryGo(1);
+  if (e.key === 'ArrowLeft')  galleryGo(-1);
+}
+
+// ── ZOOM OVERLAY ─────────────────────────────────────────────────────────────
+let _zoomImgs = [], _zoomIdx = 0;
+
+window.galleryZoom = function(imgs, startIdx) {
+  const src = imgs[startIdx];
+  if (!src || !src.startsWith('http')) return; // don't zoom emojis
+  _zoomImgs = imgs.filter(i => i && i.startsWith('http'));
+  _zoomIdx  = _zoomImgs.indexOf(src);
+  if (_zoomIdx < 0) _zoomIdx = 0;
+  renderZoomOverlay();
+};
+
+function renderZoomOverlay() {
+  let overlay = document.getElementById('galleryZoomOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'galleryZoomOverlay';
+    overlay.className = 'gallery-zoom-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay || e.target.tagName === 'IMG') closeGalleryZoom(); };
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = `
+    <button class="gallery-zoom-close" onclick="closeGalleryZoom()">✕</button>
+    <img src="${_zoomImgs[_zoomIdx]}" alt="Zoomed product image">
+  `;
+  overlay.style.display = 'flex';
+}
+
+window.galleryZoomGo = function(dir) {
+  _zoomIdx = ((_zoomIdx + dir) + _zoomImgs.length) % _zoomImgs.length;
+  renderZoomOverlay();
+};
+
+window.closeGalleryZoom = function() {
+  const overlay = document.getElementById('galleryZoomOverlay');
+  if (overlay) { overlay.style.display = 'none'; overlay.innerHTML = ''; }
+};
+
+// ── SELLER: Collect gallery images from form ──────────────────────────────────
+window.collectGalleryImages = function() {
+  return Array.from(document.querySelectorAll('.gallery-img-input'))
+    .map(i => i.value.trim())
+    .filter(v => v.startsWith('http'));
+};
+
+// Load existing gallery into edit form
+window.loadGalleryIntoForm = function(images) {
+  const inputs = document.querySelectorAll('.gallery-img-input');
+  // images[0] is already the primary (prodImage), so start from index 1
+  const extras = (images || []).slice(1);
+  inputs.forEach((input, i) => {
+    input.value = extras[i] || '';
+  });
+};
