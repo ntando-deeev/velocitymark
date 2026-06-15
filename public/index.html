@@ -388,6 +388,7 @@
         <button class="dash-tab" onclick="switchDashTab('orders',this)">Orders</button>
         <button class="dash-tab" onclick="switchDashTab('coupons',this)">Coupons</button>
         <button class="dash-tab" onclick="switchDashTab('stock',this)">Stock</button>
+        <button class="dash-tab" onclick="switchDashTab('myshop',this)">🏪 My Shop</button>
         <button class="dash-tab" onclick="switchDashTab('profile',this)">Profile</button>
       </div>
       <!-- Analytics -->
@@ -422,11 +423,21 @@
             <div class="form-group"><label>SKU</label><input type="text" id="prodSku" placeholder="SKU-001"></div>
           </div>
           <div class="form-group">
-            <label>Primary Image URL <span class="label-hint">Main product photo</span></label>
-            <input type="url" id="prodImage" placeholder="https://example.com/image.jpg">
+            <label>Primary Image <span class="label-hint">Upload or paste a URL</span></label>
+            <div class="img-upload-wrap">
+              <input type="file" id="prodImageFile" accept="image/*" onchange="handleProdImageUpload(this)">
+              <label for="prodImageFile" class="img-upload-btn">📁 Upload Image</label>
+              <span class="img-upload-or">or</span>
+              <input type="url" id="prodImage" placeholder="https://example.com/image.jpg">
+            </div>
+            <div id="prodImagePreview" class="img-preview-row"></div>
           </div>
           <div class="form-group">
-            <label>Gallery Images <span class="label-hint">Up to 5 more photos (shown as thumbnails)</span></label>
+            <label>Gallery Images <span class="label-hint">Upload up to 5 more photos</span></label>
+            <div class="img-upload-wrap">
+              <input type="file" id="galleryFileInput" accept="image/*" multiple onchange="handleGalleryUpload(this)">
+              <label for="galleryFileInput" class="img-upload-btn">📁 Upload Gallery</label>
+            </div>
             <div id="galleryInputs" class="gallery-inputs">
               <input type="url" class="gallery-img-input" placeholder="Gallery image 2 URL">
               <input type="url" class="gallery-img-input" placeholder="Gallery image 3 URL">
@@ -434,6 +445,7 @@
               <input type="url" class="gallery-img-input" placeholder="Gallery image 5 URL">
               <input type="url" class="gallery-img-input" placeholder="Gallery image 6 URL">
             </div>
+            <div id="galleryPreview" class="img-preview-row"></div>
           </div>
           <div class="form-group"><label>Description</label><textarea id="prodDesc" rows="3" placeholder="Describe your product..."></textarea></div>
           <div class="form-group"><label>Tags (comma separated)</label><input type="text" id="prodTags" placeholder="wireless, portable, black"></div>
@@ -491,6 +503,16 @@
         <div class="dash-panel-toolbar"><h3>Stock Management</h3></div>
         <div id="stockList"></div>
       </div>
+      <!-- My Shop -->
+      <div id="tab-myshop" class="dash-panel" style="display:none;">
+        <div class="dash-panel-toolbar">
+          <h3>🏪 My Shop</h3>
+          <a id="myShopLink" href="#" target="_blank" class="btn btn-primary btn-sm">🔗 View Public Shop</a>
+        </div>
+        <div id="myShopPreview" class="my-shop-preview">
+          <div style="color:var(--text-muted);text-align:center;padding:2rem">Loading your shop...</div>
+        </div>
+      </div>
       <!-- Profile -->
       <div id="tab-profile" class="dash-panel" style="display:none;">
         <h3>Store Profile</h3>
@@ -508,7 +530,16 @@
             <div class="form-group"><label>Location</label><input type="text" id="profileLocation"></div>
             <div class="form-group"><label>Website</label><input type="url" id="profileWebsite"></div>
           </div>
-          <div class="form-group"><label>Store Icon (emoji or image URL)</label><input type="text" id="profileImage" placeholder="🏪 or https://..."></div>
+          <div class="form-group">
+            <label>Store Logo / Icon</label>
+            <div class="img-upload-wrap">
+              <input type="file" id="profileImageFile" accept="image/*" onchange="handleProfileImageUpload(this)">
+              <label for="profileImageFile" class="img-upload-btn">📁 Upload Logo</label>
+              <span class="img-upload-or">or emoji/URL</span>
+              <input type="text" id="profileImage" placeholder="🏪 or https://...">
+            </div>
+            <div id="profileImagePreview" class="img-preview-row"></div>
+          </div>
           <div class="form-group"><label>WhatsApp Number <span style="color:#25d366;font-size:.8rem">💬 Buyers contact you directly</span></label><input type="text" id="profileWhatsapp" placeholder="+1234567890 (include country code)"></div>
           <button type="submit" class="btn btn-primary">Save Profile</button>
         </form>

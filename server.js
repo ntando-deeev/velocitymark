@@ -10,11 +10,37 @@ import Stripe from 'stripe';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
+import multer from 'multer';
+import fs from 'fs';
+import crypto from 'crypto';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// ─── Uploads directory setup ──────────────────────────────────────────────────
+const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    const name = crypto.randomBytes(12).toString('hex') + ext;
+    cb(null, name);
+  }
+});
+const fileFilter = (req, file, cb) => {
+  const allowed = ['image/jpeg','image/png','image/webp','image/gif'];
+  if (allowed.includes(file.mimetype)) cb(null, true);
+  else cb(new Error('Only JPEG, PNG, WEBP and GIF images are allowed'), false);
+};
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 8 * 1024 * 1024 } // 8 MB
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -184,6 +210,24 @@ app.get('/api/health', (req, res) => {
     status: 'VelocityMark Marketplace is running',
     db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
+});
+
+// ─── IMAGE UPLOAD ─────────────────────────────────────────────────────────────
+// Available to ALL sellers (free + premium) — no gate.
+// POST /api/upload/image  (multipart, field: "image")
+// Returns: { url: "/uploads/filename.jpg" }
+app.post('/api/upload/image', verifyVendor, upload.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No image file provided' });
+  const domain = process.env.DOMAIN || '';
+  res.json({ success: true, url: `${domain}/uploads/${req.file.filename}` });
+});
+
+// POST /api/upload/images  (multipart, field: "images", up to 6 files)
+app.post('/api/upload/images', verifyVendor, upload.array('images', 6), (req, res) => {
+  if (!req.files || !req.files.length) return res.status(400).json({ error: 'No images provided' });
+  const domain = process.env.DOMAIN || '';
+  const urls = req.files.map(f => `${domain}/uploads/${f.filename}`);
+  res.json({ success: true, urls });
 });
 
 // ─── VENDOR AUTHENTICATION ────────────────────────────────────────────────────

@@ -541,8 +541,10 @@ async function vendorRegister(e){
     if(d.success){
       localStorage.setItem('vendorToken',d.token);localStorage.setItem('vendorId',d.vendorId);
       vendorToken=d.token;vendorId=d.vendorId;
-      showToast('Store created! Welcome to VelocityMark','success');
+      showToast('Store created! Welcome to VelocityMark 🎉','success');
       closeModal('loginModal');checkAuthState();
+      // Auto-redirect seller to their dashboard after registration
+      setTimeout(()=>openDashboard(),400);
     }else showToast(d.error||'Registration failed','error');
   }catch(e){showToast('Registration error','error');}
   finally{if(btn){btn.disabled=false;btn.textContent='Create My Store';}}
@@ -597,6 +599,7 @@ function switchDashTab(name,btn){
   if(name==='orders')loadMyOrders();
   if(name==='coupons')loadMyCoupons();
   if(name==='stock')loadStockOverview();
+  if(name==='myshop')loadMyShop();
 }
 
 async function loadAnalytics(){
@@ -915,4 +918,141 @@ async function saveProductPaymentPlans(productId) {
       body: JSON.stringify({ paymentPlans: plans })
     });
   } catch (e) {}
+}
+
+// ── IMAGE UPLOAD (FREE + PREMIUM) ─────────────────────────────────────────────
+
+async function uploadImageFile(file) {
+  const fd = new FormData();
+  fd.append('image', file);
+  const res = await fetch('/api/upload/image', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${vendorToken}` },
+    body: fd
+  });
+  const d = await res.json();
+  if (!d.success) throw new Error(d.error || 'Upload failed');
+  return d.url;
+}
+
+async function handleProdImageUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 8 * 1024 * 1024) { showToast('Image must be under 8 MB', 'error'); return; }
+  showToast('Uploading image...', 'info');
+  try {
+    const url = await uploadImageFile(file);
+    document.getElementById('prodImage').value = url;
+    const prev = document.getElementById('prodImagePreview');
+    if (prev) prev.innerHTML = `<img src="${url}" alt="preview" class="img-thumb-preview">`;
+    showToast('Image uploaded ✓', 'success');
+  } catch (e) { showToast('Upload failed: ' + e.message, 'error'); }
+}
+
+async function handleGalleryUpload(input) {
+  if (!input.files || !input.files.length) return;
+  const files = Array.from(input.files).slice(0, 5);
+  showToast(`Uploading ${files.length} image(s)...`, 'info');
+  try {
+    const urls = [];
+    for (const file of files) {
+      if (file.size > 8 * 1024 * 1024) { showToast(`${file.name} is over 8 MB, skipped`, 'error'); continue; }
+      const url = await uploadImageFile(file);
+      urls.push(url);
+    }
+    // Fill gallery URL inputs
+    const galleryInputs = document.querySelectorAll('.gallery-img-input');
+    urls.forEach((url, i) => { if (galleryInputs[i]) galleryInputs[i].value = url; });
+    // Show previews
+    const prev = document.getElementById('galleryPreview');
+    if (prev) prev.innerHTML = urls.map(u => `<img src="${u}" alt="gallery" class="img-thumb-preview">`).join('');
+    showToast(`${urls.length} gallery image(s) uploaded ✓`, 'success');
+  } catch (e) { showToast('Gallery upload failed: ' + e.message, 'error'); }
+}
+
+async function handleProfileImageUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 8 * 1024 * 1024) { showToast('Image must be under 8 MB', 'error'); return; }
+  showToast('Uploading logo...', 'info');
+  try {
+    const url = await uploadImageFile(file);
+    document.getElementById('profileImage').value = url;
+    const prev = document.getElementById('profileImagePreview');
+    if (prev) prev.innerHTML = `<img src="${url}" alt="logo" class="img-thumb-preview" style="border-radius:50%">`;
+    showToast('Logo uploaded ✓', 'success');
+  } catch (e) { showToast('Upload failed: ' + e.message, 'error'); }
+}
+
+// ── MY SHOP TAB ───────────────────────────────────────────────────────────────
+
+async function loadMyShop() {
+  const preview = document.getElementById('myShopPreview');
+  const linkEl = document.getElementById('myShopLink');
+  if (!preview) return;
+  preview.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:2rem">Loading your shop...</div>';
+  try {
+    const res = await fetch('/api/vendor/dashboard', { headers: { Authorization: `Bearer ${vendorToken}` } });
+    const d = await res.json();
+    const v = d.vendor;
+    if (!v) { preview.innerHTML = '<p style="color:var(--accent2)">Could not load shop data.</p>'; return; }
+
+    const shopUrl = `#sellers`;
+    if (linkEl) {
+      linkEl.href = `#sellers`;
+      linkEl.onclick = (e) => { e.preventDefault(); closeModal('dashboardModal'); setTimeout(() => { const s = document.getElementById('sellers'); if(s) s.scrollIntoView({behavior:'smooth'}); }, 300); };
+    }
+
+    const avatar = v.image && v.image.startsWith('http')
+      ? `<img src="${v.image}" alt="${v.storeName}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--accent)">`
+      : `<span style="font-size:3rem">${v.image || '🏪'}</span>`;
+
+    // Load vendor products
+    const prodRes = await fetch(`/api/vendor/products`, { headers: { Authorization: `Bearer ${vendorToken}` } });
+    const products = await prodRes.json();
+
+    preview.innerHTML = `
+      <div class="my-shop-header">
+        <div class="my-shop-avatar">${avatar}</div>
+        <div class="my-shop-meta">
+          <h2>${v.storeName || 'My Store'}</h2>
+          <p style="color:var(--text-muted);margin:.3rem 0">${v.storeDesc || 'No description yet — add one in Profile.'}</p>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem">
+            ${v.category ? `<span class="pill">${v.category}</span>` : ''}
+            ${v.location ? `<span style="color:var(--text-muted);font-size:.85rem">📍 ${v.location}</span>` : ''}
+            ${v.website ? `<a href="${v.website}" target="_blank" style="color:var(--accent);font-size:.85rem">🌐 Website</a>` : ''}
+          </div>
+          <div style="display:flex;gap:1rem;margin-top:.75rem;flex-wrap:wrap">
+            ${v.whatsapp ? `<a href="https://wa.me/${v.whatsapp.replace(/\D/g,'')}" target="_blank" class="btn btn-outline btn-sm">💬 WhatsApp</a>` : ''}
+            ${v.contactEmail ? `<a href="mailto:${v.contactEmail}" class="btn btn-outline btn-sm">✉️ Email</a>` : ''}
+            ${v.contactPhone ? `<a href="tel:${v.contactPhone}" class="btn btn-outline btn-sm">📞 Call</a>` : ''}
+          </div>
+        </div>
+      </div>
+      <div class="my-shop-stats">
+        <div class="my-shop-stat"><span>${products.length || 0}</span><small>Products</small></div>
+        <div class="my-shop-stat"><span>${v.rating || '5.0'}</span><small>Rating ★</small></div>
+        <div class="my-shop-stat"><span>${v.totalSales || 0}</span><small>Sales</small></div>
+        <div class="my-shop-stat"><span class="plan-badge ${v.plan}">${(v.plan || 'free').toUpperCase()}</span><small>Plan</small></div>
+      </div>
+      <h4 style="margin:1.5rem 0 .75rem;font-size:1rem">My Products (${products.length})</h4>
+      <div class="my-shop-products">
+        ${products.length ? products.map(p => {
+          const img = p.image && p.image.startsWith('http')
+            ? `<img src="${p.image}" alt="${p.name}" style="width:100%;height:120px;object-fit:cover;border-radius:8px 8px 0 0">`
+            : `<div style="height:80px;display:flex;align-items:center;justify-content:center;font-size:2.5rem">${p.image || '📦'}</div>`;
+          return `<div class="my-shop-product-card">
+            ${img}
+            <div style="padding:.6rem">
+              <div style="font-weight:600;font-size:.9rem;margin-bottom:.2rem">${p.name}</div>
+              <div style="color:var(--accent);font-weight:700">${Number(p.price).toFixed(2)}</div>
+              <div style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem">Stock: ${p.stock ?? 0}</div>
+            </div>
+          </div>`;
+        }).join('') : '<p style="color:var(--text-muted)">No products yet. Add some in the Products tab.</p>'}
+      </div>
+    `;
+  } catch (e) {
+    preview.innerHTML = '<p style="color:var(--accent2)">Could not load shop. Please try again.</p>';
+  }
 }
