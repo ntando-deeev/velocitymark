@@ -285,14 +285,30 @@
       <div class="footer-brand">
         <img src="logo.png" alt="VelocityMark" class="footer-logo">
         <p>Accelerating commerce worldwide.</p>
+        <!-- Mr Ntando Ofc Developer Badge -->
+        <div class="dev-credit-badge">
+          <span class="dev-credit-icon">⚡</span>
+          <div class="dev-credit-text">
+            <span class="dev-credit-built">Built by</span>
+            <span class="dev-credit-name">Mr Ntando Ofc</span>
+          </div>
+        </div>
       </div>
       <div class="footer-links">
-        <div class="footer-col"><h4>Buyers</h4><a href="#shop">Browse Products</a><a href="#" onclick="showModal('trackOrderModal');return false;">Track Order</a><a href="#sellers">Find Sellers</a></div>
-        <div class="footer-col"><h4>Sellers</h4><a href="#" onclick="showModal('loginModal');return false;">Start Selling</a><a href="#" onclick="showModal('loginModal');return false;">Seller Dashboard</a></div>
-        <div class="footer-col"><h4>Support</h4><a href="mailto:supportvmarket@starlight.store">Contact Us</a></div>
+        <div class="footer-col"><h4>Buyers</h4><a href="#shop">Browse Products</a><a href="#" onclick="showModal('trackOrderModal');return false;">Track Order</a><a href="#sellers">Find Sellers</a><a href="#" onclick="openRecentlyViewed();return false;">Recently Viewed</a><a href="#" onclick="openLoyaltyPanel();return false;">🎁 Loyalty Points</a></div>
+        <div class="footer-col"><h4>Sellers</h4><a href="#" onclick="showModal('loginModal');return false;">Start Selling</a><a href="#" onclick="showModal('loginModal');return false;">Seller Dashboard</a><a href="#" onclick="showModal('loginModal');return false;">Flash Sales</a><a href="#" onclick="showModal('loginModal');return false;">Coupons</a></div>
+        <div class="footer-col"><h4>Support</h4><a href="mailto:supportvmarket@starlight.store">Contact Us</a><a href="#" onclick="showModal('disputeModal');return false;">Dispute Center</a><a href="#" onclick="showModal('referralModal');return false;">Referral Program</a></div>
       </div>
     </div>
-    <div class="footer-bottom"><p>&copy; 2026 VelocityMark. Built by Mr Ntando Ofc. All rights reserved.</p></div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 VelocityMark. Built by <strong>Mr Ntando Ofc</strong>. All rights reserved.</p>
+      <div class="footer-trust-badges">
+        <span class="trust-badge">🔒 Secure Checkout</span>
+        <span class="trust-badge">⚡ Velocity Verified</span>
+        <span class="trust-badge">🛡️ Buyer Protection</span>
+        <span class="trust-badge">🌍 Global Marketplace</span>
+      </div>
+    </div>
   </footer>
 
   <!-- Auth Modal -->
@@ -696,8 +712,222 @@
     </div>
   </div>
 
+  <!-- ── DISPUTE CENTER MODAL ── -->
+  <div class="modal" id="disputeModal">
+    <div class="modal-overlay" onclick="closeModal('disputeModal')"></div>
+    <div class="modal-box modal-wide">
+      <button class="modal-close" onclick="closeModal('disputeModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h2 style="margin-bottom:1.5rem">🛡️ Dispute Center</h2>
+      <p style="color:var(--text-muted);margin-bottom:1.5rem">Having an issue with an order? Submit a dispute and our team will step in within 24 hours.</p>
+      <form onsubmit="submitDispute(event)">
+        <div class="form-group"><label>Order ID</label><input type="text" id="disputeOrderId" placeholder="e.g. ORD-00123" required></div>
+        <div class="form-group"><label>Issue Type</label>
+          <select id="disputeType">
+            <option value="not_received">Item not received</option>
+            <option value="not_as_described">Item not as described</option>
+            <option value="wrong_item">Wrong item sent</option>
+            <option value="refund">Refund request</option>
+            <option value="seller_unresponsive">Seller unresponsive</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Describe the problem</label><textarea id="disputeDesc" rows="4" placeholder="Explain what happened..." required></textarea></div>
+        <div class="form-group"><label>Your Email</label><input type="email" id="disputeEmail" placeholder="your@email.com" required></div>
+        <button type="submit" class="btn btn-primary btn-full">Submit Dispute</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── REFERRAL MODAL ── -->
+  <div class="modal" id="referralModal">
+    <div class="modal-overlay" onclick="closeModal('referralModal')"></div>
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('referralModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h2 style="margin-bottom:.5rem">🎉 Refer & Earn</h2>
+      <p style="color:var(--text-muted);margin-bottom:1.5rem">Invite friends to VelocityMark and both of you earn <strong style="color:var(--accent)">$5 store credit</strong> when they make their first purchase.</p>
+      <div class="referral-box">
+        <label style="font-size:.85rem;color:var(--text-muted)">Your referral link</label>
+        <div class="referral-link-wrap">
+          <input type="text" id="referralLinkInput" readonly value="https://vmarket.kozow.com/?ref=loading...">
+          <button class="btn btn-primary btn-sm" onclick="copyReferralLink()">Copy</button>
+        </div>
+      </div>
+      <div class="referral-stats" id="referralStats">
+        <div class="ref-stat"><span id="refCount">0</span><small>Referrals</small></div>
+        <div class="ref-stat"><span id="refEarned">$0</span><small>Earned</small></div>
+      </div>
+      <div style="margin-top:1rem;display:flex;gap:.75rem;justify-content:center;">
+        <a id="refWhatsApp" href="#" target="_blank" class="btn btn-ghost btn-sm" onclick="shareReferralWhatsApp()">📱 Share on WhatsApp</a>
+        <button class="btn btn-ghost btn-sm" onclick="shareReferralNative()">🔗 Share</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RECENTLY VIEWED PANEL ── -->
+  <div class="sidebar-panel" id="recentlyViewedPanel">
+    <div class="sidebar-header">
+      <h3>👁️ Recently Viewed</h3>
+      <button onclick="closeRecentlyViewed()" class="sidebar-close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div id="recentlyViewedList" class="sidebar-list"></div>
+  </div>
+
+  <!-- ── LOYALTY POINTS PANEL ── -->
+  <div class="sidebar-panel" id="loyaltyPanel">
+    <div class="sidebar-header">
+      <h3>🎁 Loyalty Points</h3>
+      <button onclick="closeLoyaltyPanel()" class="sidebar-close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="loyalty-inner">
+      <div class="loyalty-balance-card">
+        <span class="loyalty-pts-label">Your Points</span>
+        <span class="loyalty-pts-val" id="loyaltyPointsVal">0</span>
+        <span class="loyalty-pts-sub">≈ $<span id="loyaltyDollarVal">0.00</span> store credit</span>
+      </div>
+      <div class="loyalty-how">
+        <h4>How to earn points</h4>
+        <div class="loyalty-rule"><span>🛒</span><span>+10 pts for every $1 spent</span></div>
+        <div class="loyalty-rule"><span>⭐</span><span>+50 pts for leaving a review</span></div>
+        <div class="loyalty-rule"><span>👥</span><span>+200 pts for each referral</span></div>
+        <div class="loyalty-rule"><span>📦</span><span>+100 pts on first purchase</span></div>
+      </div>
+      <div class="loyalty-redeem">
+        <h4>Redeem Points</h4>
+        <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:.75rem">100 points = $1 store credit. Minimum 500 points to redeem.</p>
+        <button class="btn btn-primary btn-full" onclick="redeemLoyaltyPoints()">Redeem at Checkout</button>
+      </div>
+      <div id="loyaltyHistory" class="loyalty-history"></div>
+    </div>
+  </div>
+
+  <!-- ── REPORT LISTING MODAL ── -->
+  <div class="modal" id="reportModal">
+    <div class="modal-overlay" onclick="closeModal('reportModal')"></div>
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('reportModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h2 style="margin-bottom:1rem">🚩 Report Listing</h2>
+      <p style="color:var(--text-muted);margin-bottom:1rem">Help keep VelocityMark safe. Reports are reviewed within 24 hours.</p>
+      <input type="hidden" id="reportProductId">
+      <form onsubmit="submitReport(event)">
+        <div class="form-group"><label>Reason</label>
+          <select id="reportReason">
+            <option value="counterfeit">Counterfeit / fake product</option>
+            <option value="misleading">Misleading description</option>
+            <option value="prohibited">Prohibited item</option>
+            <option value="spam">Spam listing</option>
+            <option value="scam">Suspected scam</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Additional details (optional)</label><textarea id="reportDetails" rows="3" placeholder="Tell us more..."></textarea></div>
+        <div class="form-group"><label>Your Email</label><input type="email" id="reportEmail" placeholder="your@email.com" required></div>
+        <button type="submit" class="btn btn-danger btn-full">Submit Report</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── PRICE DROP ALERT MODAL ── -->
+  <div class="modal" id="priceAlertModal">
+    <div class="modal-overlay" onclick="closeModal('priceAlertModal')"></div>
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('priceAlertModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h2 style="margin-bottom:.5rem">🔔 Price Drop Alert</h2>
+      <p style="color:var(--text-muted);margin-bottom:1.5rem">We'll email you the moment <strong id="priceAlertProductName">this product</strong> drops in price.</p>
+      <input type="hidden" id="priceAlertProductId">
+      <form onsubmit="savePriceAlert(event)">
+        <div class="form-group"><label>Your Email</label><input type="email" id="priceAlertEmail" placeholder="your@email.com" required></div>
+        <div class="form-group"><label>Alert me when price drops below (optional)</label><input type="number" id="priceAlertThreshold" placeholder="e.g. 25.00" step="0.01" min="0"></div>
+        <button type="submit" class="btn btn-primary btn-full">Set Alert — Free</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── PRODUCT Q&A MODAL ── -->
+  <div class="modal" id="qaModal">
+    <div class="modal-overlay" onclick="closeModal('qaModal')"></div>
+    <div class="modal-box modal-wide">
+      <button class="modal-close" onclick="closeModal('qaModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h2 style="margin-bottom:1rem">❓ Product Q&A</h2>
+      <input type="hidden" id="qaProductId">
+      <div id="qaList" class="qa-list" style="margin-bottom:1.5rem;max-height:300px;overflow-y:auto;"></div>
+      <h4 style="margin-bottom:.75rem">Ask a question</h4>
+      <form onsubmit="submitQuestion(event)">
+        <div class="form-group"><label>Your Question</label><textarea id="qaQuestion" rows="3" placeholder="Ask the seller anything about this product..." required></textarea></div>
+        <div class="form-group"><label>Your Name</label><input type="text" id="qaName" placeholder="Your name" required></div>
+        <div class="form-group"><label>Your Email</label><input type="email" id="qaEmail" placeholder="your@email.com" required></div>
+        <button type="submit" class="btn btn-primary btn-full">Submit Question</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── PHOTO REVIEW MODAL ── -->
+  <div class="modal" id="reviewModal">
+    <div class="modal-overlay" onclick="closeModal('reviewModal')"></div>
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('reviewModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h2 style="margin-bottom:1rem">⭐ Write a Review</h2>
+      <input type="hidden" id="reviewProductId">
+      <form onsubmit="submitReview(event)">
+        <div class="form-group">
+          <label>Rating</label>
+          <div class="star-picker" id="starPicker">
+            <span class="star-btn" onclick="setRating(1)">★</span>
+            <span class="star-btn" onclick="setRating(2)">★</span>
+            <span class="star-btn" onclick="setRating(3)">★</span>
+            <span class="star-btn" onclick="setRating(4)">★</span>
+            <span class="star-btn" onclick="setRating(5)">★</span>
+          </div>
+          <input type="hidden" id="reviewRating" value="5">
+        </div>
+        <div class="form-group"><label>Your Review</label><textarea id="reviewText" rows="4" placeholder="Tell others about your experience..." required></textarea></div>
+        <div class="form-group">
+          <label>Add Photo (optional)</label>
+          <input type="file" id="reviewPhotoInput" accept="image/*" onchange="previewReviewPhoto(this)">
+          <div id="reviewPhotoPreview" style="margin-top:.5rem"></div>
+        </div>
+        <div class="form-group"><label>Your Name</label><input type="text" id="reviewName" placeholder="Your name" required></div>
+        <button type="submit" class="btn btn-primary btn-full">Submit Review</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── BUNDLE DEAL MODAL ── -->
+  <div class="modal" id="bundleModal">
+    <div class="modal-overlay" onclick="closeModal('bundleModal')"></div>
+    <div class="modal-box modal-wide">
+      <button class="modal-close" onclick="closeModal('bundleModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h2 style="margin-bottom:.5rem">🎁 Bundle Deal</h2>
+      <p style="color:var(--accent);font-weight:600;margin-bottom:1rem">Buy 2+ items from the same seller — get 10% off your total!</p>
+      <div id="bundleProductList" class="bundle-list"></div>
+      <div class="bundle-summary" id="bundleSummary"></div>
+      <button class="btn btn-primary btn-full" onclick="addBundleToCart()" style="margin-top:1rem">Add Bundle to Cart</button>
+    </div>
+  </div>
+
+  <!-- ── WHATSAPP CONTACT MODAL ── -->
+  <div class="modal" id="whatsappModal">
+    <div class="modal-overlay" onclick="closeModal('whatsappModal')"></div>
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('whatsappModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div style="text-align:center;padding:1rem 0">
+        <div style="font-size:3rem;margin-bottom:1rem">📱</div>
+        <h2 style="margin-bottom:.5rem">Chat with Seller</h2>
+        <p style="color:var(--text-muted);margin-bottom:1.5rem" id="whatsappSellerName">Contact the seller directly via WhatsApp for fast answers.</p>
+        <a id="whatsappLink" href="#" target="_blank" class="btn btn-primary btn-lg btn-full" style="background:#25d366;margin-bottom:.75rem">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Open WhatsApp Chat
+        </a>
+        <button class="btn btn-ghost btn-full" onclick="closeModal('whatsappModal')">Maybe later</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SIDEBAR OVERLAY ── -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeAllSidebars()"></div>
+
   <script src="marketplace.js"></script>
   <script src="premium.js"></script>
   <script src="customer.js"></script>
+  <script src="features.js"></script>
 </body>
 </html>
