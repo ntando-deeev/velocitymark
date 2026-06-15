@@ -26,8 +26,9 @@ async function loadHeroStats(){
     const [pr,vr]=await Promise.all([fetch('/api/products?limit=1'),fetch('/api/vendors')]);
     const pd=await pr.json(),vd=await vr.json();
     const ps=document.getElementById('statProducts'),vs=document.getElementById('statSellers');
-    if(ps)ps.textContent=(pd.total||500)+'+';
-    if(vs)vs.textContent=(Array.isArray(vd)?vd.length:0)+'+';
+    const pCount=pd.total||500, vCount=Array.isArray(vd)?vd.length:0;
+    if(ps){ if(typeof animateStatNumber==='function') animateStatNumber(ps,pCount,'+'); else ps.textContent=pCount+'+'; }
+    if(vs){ if(typeof animateStatNumber==='function') animateStatNumber(vs,vCount,'+'); else vs.textContent=vCount+'+'; }
   }catch(e){}
 }
 
@@ -110,6 +111,7 @@ async function openProduct(idOrName){
   try{
     let p=allProducts.find(x=>x._id===idOrName||encodeURIComponent(x.name)===idOrName);
     if(!p){const res=await fetch(`/api/products/${idOrName}`);p=await res.json();}
+    if(p&&p._id&&typeof trackRecentlyViewed==='function') trackRecentlyViewed(p);
     const imgHtml=p.image&&p.image.startsWith('http')?`<img src="${p.image}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<div style=\\'font-size:4rem;display:flex;align-items:center;justify-content:center;height:100%\\'>${(!p.image||p.image.startsWith('http'))?'📦':p.image}</div>'">`:`<div style="font-size:4rem;display:flex;align-items:center;justify-content:center;height:100%">${p.image||'📦'}</div>`;
     const inWish=wishlist.some(w=>w._id===p._id||w.name===p.name);
     const pid=JSON.stringify(p).replace(/"/g,'&quot;');
@@ -123,6 +125,7 @@ async function openProduct(idOrName){
           <div class="product-detail-price">$${Number(p.price).toFixed(2)}</div>
           ${p.originalPrice?`<div class="product-detail-original">Was $${Number(p.originalPrice).toFixed(2)}</div>`:''}
           <div class="product-detail-desc">${p.description||'No description available.'}</div>
+          <div id="paymentPlansContainer-${p._id||'x'}"></div>
           <div class="product-detail-actions">
             <button class="btn btn-primary" onclick="addToCart(${pid});closeModal('productModal')">Add to Cart</button>
             <button id="wishBtn-${p._id}" class="btn btn-outline" onclick="toggleWishlist(${pid});updateWishBtnState('${p._id}')">${inWish?'♥ Saved':'♡ Save'}</button>
@@ -143,6 +146,7 @@ async function openProduct(idOrName){
       </div>`;
     if(p.vendorId)loadVendorContact(p.vendorId,`vendorContact-${p._id||'x'}`);
     if(p._id)loadProductReviews(p._id,`reviewsList-${p._id}`);
+    if(p._id)loadBuyerPaymentPlans(p._id,p.price,`paymentPlansContainer-${p._id||'x'}`);
   }catch(e){content.innerHTML='<p style="color:var(--text-muted);padding:2rem">Could not load product details.</p>';}
 }
 
@@ -629,7 +633,13 @@ async function uploadProduct(){
       tags:(document.getElementById('prodTags')?.value||'').split(',').map(t=>t.trim()).filter(Boolean)
     })});
     const d=await res.json();
-    if(d.success){showToast('Product added!','success');document.getElementById('addProductForm').style.display='none';loadMyProducts();}
+    if(d.success){
+      showToast('Product added!','success');
+      document.getElementById('addProductForm').style.display='none';
+      // Save payment plans if any were added
+      if(d.product&&d.product._id) await saveProductPaymentPlans(d.product._id);
+      loadMyProducts();
+    }
     else showToast(d.error||'Failed','error');
   }catch(e){showToast('Error adding product','error');}
 }
@@ -665,6 +675,8 @@ function editProduct(id,p){
   setVal('prodStock',p.stock);setVal('prodSku',p.sku);setVal('prodImage',p.image);
   setVal('prodDesc',p.description);setVal('prodCategory',p.category);
   if(document.getElementById('prodTags'))document.getElementById('prodTags').value=(p.tags||[]).join(', ');
+  // Load existing payment plans into the form
+  if(typeof loadPaymentPlansIntoForm==='function') loadPaymentPlansIntoForm(p.paymentPlans||[]);
   // Change button to update
   const btn=document.querySelector('#addProductForm .btn-primary');
   if(btn){btn.textContent='Update Product';btn.onclick=()=>updateProduct(id);}
@@ -681,7 +693,13 @@ async function updateProduct(id){
       tags:(document.getElementById('prodTags')?.value||'').split(',').map(t=>t.trim()).filter(Boolean)
     })});
     const d=await res.json();
-    if(d.success){showToast('Product updated!','success');document.getElementById('addProductForm').style.display='none';loadMyProducts();}
+    if(d.success){
+      showToast('Product updated!','success');
+      document.getElementById('addProductForm').style.display='none';
+      // Save payment plans
+      await saveProductPaymentPlans(id);
+      loadMyProducts();
+    }
     else showToast(d.error||'Failed','error');
   }catch(e){showToast('Error updating','error');}
 }
@@ -859,3 +877,33 @@ function showToast(msg,type='info'){
   setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(10px)';setTimeout(()=>t.remove(),300);},3500);
 }
 
+
+// ── PAYMENT PLANS (BUYER) ──────────────────────────────────────────────────
+async function loadBuyerPaymentPlans(productId, price, containerId) {
+  try {
+    const res = await fetch(`/api/products/${productId}/payment-plans`);
+    const data = await res.json();
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (data.paymentPlans && data.paymentPlans.length > 0 && typeof renderBuyerPlans === 'function') {
+      renderBuyerPlans(data.paymentPlans, price, container);
+    }
+  } catch (e) {}
+}
+
+// ── PAYMENT PLANS (SELLER DASHBOARD) ─────────────────────────────────────────
+// Patch uploadProduct to include payment plans
+const _origUploadProduct = typeof uploadProduct !== 'undefined' ? uploadProduct : null;
+
+async function saveProductPaymentPlans(productId) {
+  if (typeof collectPaymentPlans !== 'function') return;
+  const plans = collectPaymentPlans();
+  if (!plans.length) return;
+  try {
+    await fetch(`/api/products/${productId}/payment-plans`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${vendorToken}` },
+      body: JSON.stringify({ paymentPlans: plans })
+    });
+  } catch (e) {}
+}

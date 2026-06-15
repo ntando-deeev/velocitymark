@@ -457,3 +457,223 @@ input, textarea, select, button { font-family: inherit; }
 .contact-link:hover { border-color: var(--accent); color: var(--text); }
 .contact-link.whatsapp-link { border-color: #25d36640; color: #25d366; }
 .contact-link.whatsapp-link:hover { background: #25d36615; border-color: #25d366; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREMIUM FEATURES — added by Ninja
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── LIGHT MODE ─────────────────────────────────────────────────────────── */
+body.light-mode {
+  --bg:        #f4f4f8;
+  --bg-card:   #ffffff;
+  --bg-card2:  #eeeef6;
+  --border:    #00000012;
+  --border-md: #00000022;
+  --accent:    #6c63ff;
+  --accent2:   #ff6b6b;
+  --accent-glow: rgba(108,99,255,0.15);
+  --text:      #1a1a2e;
+  --text-muted:#6666aa;
+  --shadow:    0 4px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 48px rgba(0,0,0,0.12);
+}
+body.light-mode .navbar { background: rgba(244,244,248,0.9); }
+body.light-mode .navbar.scrolled { background: rgba(244,244,248,0.99); }
+body.light-mode .hero { background: linear-gradient(135deg, #f4f4f8 0%, #e8e8f8 100%); }
+body.light-mode .hero-orb { opacity: 0.3; }
+body.light-mode .trust-bar { background: var(--bg-card2); }
+body.light-mode .section-alt { background: #eeeef6; }
+body.light-mode .footer { background: #1a1a2e; color: #f0f0f8; }
+body.light-mode .footer-brand p, body.light-mode .footer-bottom p { color: #8888aa; }
+
+/* ── SCROLL PROGRESS BAR ────────────────────────────────────────────────── */
+.scroll-progress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  z-index: 9999; transition: width 0.1s linear;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* ── BACK TO TOP ────────────────────────────────────────────────────────── */
+.back-to-top {
+  position: fixed; bottom: 5.5rem; right: 1.5rem;
+  width: 44px; height: 44px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: translateY(12px);
+  transition: opacity 0.3s, transform 0.3s, box-shadow 0.2s;
+  z-index: 500; box-shadow: 0 4px 16px var(--accent-glow);
+}
+.back-to-top svg { width: 18px; height: 18px; stroke: #fff; }
+.back-to-top.visible { opacity: 1; transform: translateY(0); }
+.back-to-top:hover { box-shadow: 0 6px 24px var(--accent-glow); transform: translateY(-2px); }
+
+/* ── COOKIE BANNER ──────────────────────────────────────────────────────── */
+.cookie-banner {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 800;
+  background: var(--bg-card2); border-top: 1px solid var(--border-md);
+  padding: 1rem 1.5rem;
+  animation: slideUp 0.4s ease;
+}
+.cookie-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.cookie-inner span { font-size: 0.875rem; color: var(--text-muted); }
+.cookie-link { color: var(--accent); text-decoration: underline; }
+.cookie-actions { display: flex; gap: 0.75rem; flex-shrink: 0; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+/* ── PROMO BAR ──────────────────────────────────────────────────────────── */
+.promo-bar {
+  background: linear-gradient(90deg, #6c63ff 0%, #9b59b6 100%);
+  color: #fff; text-align: center;
+  padding: 0.55rem 3rem;
+  font-size: 0.88rem; font-weight: 500;
+  position: relative; z-index: 150;
+}
+.promo-link { color: #fff; text-decoration: underline; font-weight: 700; margin-left: 4px; }
+.promo-close {
+  position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: rgba(255,255,255,0.7);
+  cursor: pointer; font-size: 1rem; line-height: 1;
+}
+.promo-close:hover { color: #fff; }
+
+/* ── TESTIMONIALS ───────────────────────────────────────────────────────── */
+.testimonials-section { overflow: hidden; }
+.testimonials-track-wrap {
+  overflow: hidden; cursor: grab; user-select: none;
+}
+.testimonials-track-wrap:active { cursor: grabbing; }
+.testimonials-track {
+  display: flex; gap: 1.5rem;
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+.testimonial-card {
+  flex: 0 0 calc(33.333% - 1rem);
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1.75rem;
+  display: flex; flex-direction: column; gap: 1rem;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.testimonial-card:hover { border-color: var(--accent); box-shadow: 0 8px 32px var(--accent-glow); }
+.testimonial-stars { color: #f59e0b; font-size: 1.1rem; letter-spacing: 2px; }
+.testimonial-text { font-size: 0.95rem; color: var(--text-muted); line-height: 1.7; flex: 1; font-style: italic; }
+.testimonial-author { display: flex; align-items: center; gap: 0.75rem; }
+.testimonial-avatar { font-size: 2rem; }
+.testimonial-author strong { display: block; font-size: 0.9rem; color: var(--text); }
+.testimonial-author span { font-size: 0.8rem; color: var(--text-muted); }
+.testimonial-dots { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; }
+.testimonial-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border-md); border: none; cursor: pointer;
+  transition: background 0.3s, transform 0.3s;
+}
+.testimonial-dot.active { background: var(--accent); transform: scale(1.3); }
+
+/* ── FAQ ────────────────────────────────────────────────────────────────── */
+.faq-section { background: var(--bg); }
+.faq-list { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.75rem; }
+.faq-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.faq-q {
+  width: 100%; text-align: left; background: none; border: none;
+  padding: 1.2rem 1.5rem; color: var(--text); font-size: 0.95rem;
+  font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  transition: color var(--transition);
+}
+.faq-q:hover { color: var(--accent); }
+.faq-icon { font-size: 1.3rem; color: var(--accent); flex-shrink: 0; transition: transform 0.3s; line-height: 1; }
+.faq-item.open .faq-icon { transform: rotate(45deg); }
+.faq-a {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.3s ease;
+}
+.faq-a p { padding: 0 1.5rem 1.2rem; color: var(--text-muted); font-size: 0.9rem; line-height: 1.75; }
+.faq-item.open .faq-a { max-height: 200px; }
+
+/* ── RECENTLY VIEWED ────────────────────────────────────────────────────── */
+/* reuses .products-grid — no extra CSS needed */
+
+/* ── SKELETON UPGRADE (pulse animation) ────────────────────────────────── */
+.product-skeleton {
+  background: var(--bg-card2);
+  border-radius: var(--radius-lg);
+  min-height: 280px;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── ANIMATED STAT NUMBERS ──────────────────────────────────────────────── */
+.stat-num { transition: none; }
+
+/* ── RESPONSIVE ADJUSTMENTS ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .testimonial-card { flex: 0 0 calc(80% - 0.75rem); }
+}
+@media (max-width: 600px) {
+  .testimonial-card { flex: 0 0 calc(92% - 0.75rem); }
+  .cookie-inner { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .promo-bar { padding: 0.55rem 2.5rem 0.55rem 1rem; font-size: 0.8rem; }
+}
+
+/* ── PAYMENT PLANS ──────────────────────────────────────────────────────── */
+.payment-plans-section .label-hint {
+  font-size: 0.78rem; color: var(--text-muted); font-weight: 400; margin-left: 6px;
+}
+.payment-plans-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem; }
+.payment-plan-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 80px 80px 1fr auto;
+  gap: 0.5rem; align-items: center;
+  background: var(--bg-card2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.65rem 0.75rem;
+}
+.payment-plan-row input,
+.payment-plan-row select {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); padding: 0.4rem 0.6rem;
+  font-size: 0.82rem; width: 100%;
+}
+.payment-plan-row input:focus,
+.payment-plan-row select:focus {
+  outline: none; border-color: var(--accent);
+}
+.plan-remove-btn {
+  background: none; border: none; color: var(--accent2);
+  cursor: pointer; font-size: 1.1rem; padding: 0.2rem 0.4rem;
+  border-radius: 6px; transition: background var(--transition);
+}
+.plan-remove-btn:hover { background: rgba(255,107,107,0.12); }
+@media (max-width: 700px) {
+  .payment-plan-row { grid-template-columns: 1fr 1fr; }
+}
+
+/* Buyer plan selector in product detail */
+.buyer-plans-wrap { margin: 1rem 0; }
+.buyer-plans-wrap label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; display: block; }
+.buyer-plan-options { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.buyer-plan-btn {
+  background: var(--bg-card2); border: 1.5px solid var(--border-md);
+  border-radius: 10px; padding: 0.55rem 1rem;
+  cursor: pointer; transition: all var(--transition);
+  text-align: left;
+}
+.buyer-plan-btn:hover { border-color: var(--accent); }
+.buyer-plan-btn.selected { border-color: var(--accent); background: rgba(108,99,255,0.1); }
+.buyer-plan-btn .plan-name { font-size: 0.88rem; font-weight: 600; color: var(--text); display: block; }
+.buyer-plan-btn .plan-detail { font-size: 0.78rem; color: var(--accent); margin-top: 2px; display: block; }
+.buyer-plan-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; font-style: italic; }
+.buyer-plan-summary {
+  background: var(--bg-card2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.75rem 1rem;
+  margin-top: 0.75rem; font-size: 0.88rem;
+}
+.buyer-plan-summary .plan-row { display: flex; justify-content: space-between; padding: 0.2rem 0; }
+.buyer-plan-summary .plan-row strong { color: var(--accent); }

@@ -20,6 +20,31 @@
 </head>
 <body>
 
+  <!-- ── SCROLL PROGRESS BAR ── -->
+  <div id="scrollProgress" class="scroll-progress"></div>
+
+  <!-- ── BACK TO TOP ── -->
+  <button id="backToTop" class="back-to-top" onclick="scrollToTop()" title="Back to top" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+  </button>
+
+  <!-- ── COOKIE CONSENT ── -->
+  <div id="cookieBanner" class="cookie-banner" style="display:none;" role="dialog" aria-label="Cookie consent">
+    <div class="cookie-inner">
+      <span>🍪 We use cookies to improve your experience and show relevant products. <a href="#" class="cookie-link">Learn more</a></span>
+      <div class="cookie-actions">
+        <button class="btn btn-ghost btn-sm" onclick="declineCookies()">Decline</button>
+        <button class="btn btn-primary btn-sm" onclick="acceptCookies()">Accept All</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STICKY PROMO BAR (non-sellers only) ── -->
+  <div id="promoBar" class="promo-bar" style="display:none;">
+    <span>🚀 <strong>Free to sell</strong> — List unlimited products with 0% listing fees. <a href="#" onclick="showModal('loginModal');hidePromoBar();return false;" class="promo-link">Start your store →</a></span>
+    <button class="promo-close" onclick="hidePromoBar()" aria-label="Close">✕</button>
+  </div>
+
   <nav class="navbar" id="navbar">
     <div class="container nav-inner">
       <a href="/" class="nav-brand">
@@ -43,6 +68,12 @@
           <button class="btn-icon" onclick="toggleCart()" title="Cart">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
             <span class="badge" id="cartCount">0</span>
+          </button>
+        </li>
+        <li>
+          <button class="btn-icon" id="themeToggle" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle light/dark mode">
+            <svg id="themeIconDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg id="themeIconLight" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           </button>
         </li>
         <li id="authNavItem">
@@ -142,6 +173,98 @@
         <div class="step-card"><div class="step-num">01</div><h3>Browse &amp; Discover</h3><p>Search thousands of products from verified global sellers. Filter by category, price, and rating.</p></div>
         <div class="step-card"><div class="step-num">02</div><h3>Secure Checkout</h3><p>Protected payment via Stripe. Your details are encrypted and never shared with sellers.</p></div>
         <div class="step-card"><div class="step-num">03</div><h3>Track Your Order</h3><p>Get a live tracking link the moment your order ships. Know exactly where your package is.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── RECENTLY VIEWED ── -->
+  <section id="recentlyViewedSection" class="section" style="display:none;">
+    <div class="container">
+      <div class="section-header">
+        <h2>Recently Viewed</h2>
+        <p class="section-sub">Pick up where you left off</p>
+      </div>
+      <div class="products-grid" id="recentlyViewedGrid"></div>
+    </div>
+  </section>
+
+  <!-- ── TESTIMONIALS ── -->
+  <section class="section testimonials-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>What our community says</h2>
+        <p class="section-sub">Real buyers and sellers sharing their experience</p>
+      </div>
+      <div class="testimonials-track-wrap">
+        <div class="testimonials-track" id="testimonialsTrack">
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-text">"Shipped from Lagos to Johannesburg in 4 days. The tracking was real-time and the seller was responsive. VelocityMark just works."</p>
+            <div class="testimonial-author"><div class="testimonial-avatar">👩🏾</div><div><strong>Amara K.</strong><span>Buyer · South Africa</span></div></div>
+          </div>
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-text">"I launched my electronics store in 20 minutes. First sale came in the same day. The dashboard gives me everything I need to grow."</p>
+            <div class="testimonial-author"><div class="testimonial-avatar">👨🏿</div><div><strong>Kwame T.</strong><span>Seller · Ghana</span></div></div>
+          </div>
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-text">"The coupon system helped me run a campaign and I sold out my entire stock. The analytics dashboard showed me exactly what was working."</p>
+            <div class="testimonial-author"><div class="testimonial-avatar">👩🏽</div><div><strong>Priya M.</strong><span>Seller · India</span></div></div>
+          </div>
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-text">"Secure checkout gave me confidence as a first-time buyer. My order arrived exactly as described — no surprises, no hassle."</p>
+            <div class="testimonial-author"><div class="testimonial-avatar">👨🏻</div><div><strong>Lucas R.</strong><span>Buyer · Brazil</span></div></div>
+          </div>
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-text">"I run three stores on VelocityMark. The multi-product dashboard and WhatsApp integration make it easy to close deals fast."</p>
+            <div class="testimonial-author"><div class="testimonial-avatar">👩🏾</div><div><strong>Fatima A.</strong><span>Seller · Nigeria</span></div></div>
+          </div>
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★☆</div>
+            <p class="testimonial-text">"Best marketplace I've found for African fashion brands. The global reach means I get orders from Europe every week now."</p>
+            <div class="testimonial-author"><div class="testimonial-avatar">👨🏾</div><div><strong>Chidi O.</strong><span>Seller · Kenya</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-dots" id="testimonialDots"></div>
+    </div>
+  </section>
+
+  <!-- ── FAQ ── -->
+  <section class="section faq-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Frequently asked questions</h2>
+        <p class="section-sub">Everything you need to know</p>
+      </div>
+      <div class="faq-list" id="faqList">
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">How much does it cost to sell on VelocityMark? <span class="faq-icon">+</span></button>
+          <div class="faq-a"><p>It's completely free to list products and open your store. VelocityMark charges a small platform fee only when you make a sale — you only pay when you earn.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">How do I get paid? <span class="faq-icon">+</span></button>
+          <div class="faq-a"><p>Payments are processed securely via Stripe. Earnings are transferred directly to your connected bank account after order confirmation. Most payouts arrive within 2–5 business days.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">Is my payment information safe? <span class="faq-icon">+</span></button>
+          <div class="faq-a"><p>Yes. VelocityMark never stores card details. All payments are encrypted and handled by Stripe, which is certified PCI DSS Level 1 — the highest standard in payment security.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">Can I sell internationally? <span class="faq-icon">+</span></button>
+          <div class="faq-a"><p>Absolutely. VelocityMark is a global marketplace. Your products are visible to buyers worldwide the moment you list them. You choose which countries you ship to.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">What happens if there's a problem with my order? <span class="faq-icon">+</span></button>
+          <div class="faq-a"><p>Contact the seller directly via their store page or through our support email at support@velocitymark.com. For unresolved disputes, our team steps in within 24 hours.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">How do I track my order? <span class="faq-icon">+</span></button>
+          <div class="faq-a"><p>Every order gets a tracking ID. Use the "Track Order" link in the footer or your confirmation email. Real-time updates are sent directly to your email.</p></div>
+        </div>
       </div>
     </div>
   </section>
@@ -301,6 +424,14 @@
           <div class="form-group"><label>Image URL</label><input type="url" id="prodImage" placeholder="https://example.com/image.jpg"></div>
           <div class="form-group"><label>Description</label><textarea id="prodDesc" rows="3" placeholder="Describe your product..."></textarea></div>
           <div class="form-group"><label>Tags (comma separated)</label><input type="text" id="prodTags" placeholder="wireless, portable, black"></div>
+
+          <!-- ── PAYMENT PLANS ── -->
+          <div class="form-group payment-plans-section">
+            <label>💳 Payment Plans <span class="label-hint">Let buyers pay the way they prefer</span></label>
+            <div id="prodPaymentPlans" class="payment-plans-list"></div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="addPaymentPlanRow()" style="margin-top:0.5rem">+ Add payment plan</button>
+          </div>
+
           <div class="form-action-row">
             <button class="btn btn-primary btn-sm" onclick="uploadProduct()">Save Product</button>
             <button class="btn btn-outline btn-sm" onclick="document.getElementById('addProductForm').style.display='none'">Cancel</button>
@@ -392,5 +523,6 @@
   <div id="toastContainer" class="toast-container"></div>
 
   <script src="marketplace.js"></script>
+  <script src="premium.js"></script>
 </body>
 </html>

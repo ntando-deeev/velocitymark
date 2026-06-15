@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
 import Stripe from 'stripe';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 
 dotenv.config();
 
@@ -72,6 +73,19 @@ const productSchema = new mongoose.Schema({
   sponsored:      { type: Boolean, default: false },
   sponsoredUntil: { type: Date },
   sponsoredBudget:{ type: Number, default: 0 },
+  // Payment plans — seller-defined flexible payment options
+  paymentPlans: [{
+    id:           { type: String },           // e.g. "full", "lay2", "dep30", "custom"
+    label:        { type: String },           // Display name, e.g. "Pay in Full"
+    type:         { type: String,
+                    enum: ['full','installments','deposit'] },
+    installments: { type: Number, default: 1 },
+    depositPct:   { type: Number, default: 0 },   // % required upfront (for deposit plans)
+    interval:     { type: String,
+                    enum: ['immediate','weekly','biweekly','monthly'],
+                    default: 'immediate' },
+    note:         { type: String }            // Optional seller note, e.g. "WhatsApp to confirm"
+  }],
   createdAt:      { type: Date, default: Date.now }
 });
 
@@ -117,6 +131,37 @@ app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ─── Rate Limiting ────────────────────────────────────────────────────────────
+// General API: 200 req / 15 min per IP
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
+});
+// Auth endpoints: 10 attempts / 15 min per IP (brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts. Please wait 15 minutes.' }
+});
+// Contact / subscribe: 5 submissions / hour per IP
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many submissions. Please wait before trying again.' }
+});
+app.use('/api', generalLimiter);
+app.use('/api/vendor/login',    authLimiter);
+app.use('/api/vendor/register', authLimiter);
+app.use('/api/contact',    contactLimiter);
+app.use('/api/subscribe',  contactLimiter);
 
 // Auth Middleware
 const verifyVendor = (req, res, next) => {
@@ -287,6 +332,50 @@ app.delete('/api/products/:id', verifyVendor, async (req, res) => {
 
     await Product.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Product deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── PAYMENT PLANS ───────────────────────────────────────────────────────────
+
+// GET plans for a product (public)
+app.get('/api/products/:id/payment-plans', async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id).select('paymentPlans price name');
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.json({ paymentPlans: product.paymentPlans || [], price: product.price });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT — seller sets payment plans for their product
+app.put('/api/products/:id/payment-plans', verifyVendor, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    if (product.vendorId.toString() !== req.vendorId)
+      return res.status(403).json({ error: 'Unauthorized' });
+
+    const { paymentPlans } = req.body;
+    if (!Array.isArray(paymentPlans))
+      return res.status(400).json({ error: 'paymentPlans must be an array' });
+
+    // Validate each plan
+    const cleaned = paymentPlans.map((plan, i) => ({
+      id:           plan.id || `plan_${i}`,
+      label:        (plan.label || '').trim().slice(0, 80),
+      type:         ['full','installments','deposit'].includes(plan.type) ? plan.type : 'full',
+      installments: Math.max(1, Math.min(24, parseInt(plan.installments) || 1)),
+      depositPct:   Math.max(0, Math.min(100, parseFloat(plan.depositPct) || 0)),
+      interval:     ['immediate','weekly','biweekly','monthly'].includes(plan.interval) ? plan.interval : 'immediate',
+      note:         (plan.note || '').trim().slice(0, 200)
+    }));
+
+    product.paymentPlans = cleaned;
+    await product.save();
+    res.json({ success: true, paymentPlans: product.paymentPlans });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
