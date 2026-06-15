@@ -142,6 +142,26 @@ const Vendor    = mongoose.model('Vendor', vendorSchema);
 const Product   = mongoose.model('Product', productSchema);
 const Order     = mongoose.model('Order', orderSchema);
 
+// ─── Customer (Buyer) Account ─────────────────────────────────────────────────
+const customerSchema = new mongoose.Schema({
+  name:        { type: String, required: true },
+  email:       { type: String, required: true, unique: true, lowercase: true },
+  password:    { type: String, required: true },
+  avatar:      { type: String, default: '' },
+  phone:       { type: String, default: '' },
+  addresses:   [{
+    label:    { type: String, default: 'Home' },   // Home, Work, Other
+    line1:    String,
+    line2:    String,
+    city:     String,
+    country:  String,
+    isDefault:{ type: Boolean, default: false }
+  }],
+  wishlist:    [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+  createdAt:   { type: Date, default: Date.now }
+});
+const Customer = mongoose.model('Customer', customerSchema);
+
 // ─── Connect to MongoDB ───────────────────────────────────────────────────────
 
 if (MONGODB_URI) {
@@ -190,13 +210,27 @@ app.use('/api/vendor/register', authLimiter);
 app.use('/api/contact',    contactLimiter);
 app.use('/api/subscribe',  contactLimiter);
 
-// Auth Middleware
+// Auth Middleware — Vendor
 const verifyVendor = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'No token' });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.vendorId = decoded.id;
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
+// Auth Middleware — Customer
+const verifyCustomer = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'No token' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (!decoded.isCustomer) return res.status(403).json({ error: 'Not a customer token' });
+    req.customerId = decoded.id;
     next();
   } catch (err) {
     res.status(401).json({ error: 'Invalid token' });
@@ -213,21 +247,154 @@ app.get('/api/health', (req, res) => {
 });
 
 // ─── IMAGE UPLOAD ─────────────────────────────────────────────────────────────
-// Available to ALL sellers (free + premium) — no gate.
+// Available to ALL authenticated users (vendors + customers) — no plan gate.
+// Auth middleware that accepts both vendor and customer tokens
+const verifyAnyUser = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'No token' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.userId = decoded.id;
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
 // POST /api/upload/image  (multipart, field: "image")
-// Returns: { url: "/uploads/filename.jpg" }
-app.post('/api/upload/image', verifyVendor, upload.single('image'), (req, res) => {
+app.post('/api/upload/image', verifyAnyUser, upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image file provided' });
   const domain = process.env.DOMAIN || '';
   res.json({ success: true, url: `${domain}/uploads/${req.file.filename}` });
 });
 
 // POST /api/upload/images  (multipart, field: "images", up to 6 files)
-app.post('/api/upload/images', verifyVendor, upload.array('images', 6), (req, res) => {
+app.post('/api/upload/images', verifyAnyUser, upload.array('images', 6), (req, res) => {
   if (!req.files || !req.files.length) return res.status(400).json({ error: 'No images provided' });
   const domain = process.env.DOMAIN || '';
   const urls = req.files.map(f => `${domain}/uploads/${f.filename}`);
   res.json({ success: true, urls });
+});
+
+// ─── CUSTOMER AUTHENTICATION ──────────────────────────────────────────────────
+
+// Register
+app.post('/api/customer/register', authLimiter, async (req, res) => {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password required' });
+  if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  try {
+    const existing = await Customer.findOne({ email });
+    if (existing) return res.status(400).json({ error: 'Email already registered' });
+    const hashed = await bcrypt.hash(password, 10);
+    const customer = await Customer.create({ name, email, password: hashed });
+    const token = jwt.sign({ id: customer._id, email, isCustomer: true }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ success: true, token, customer: { id: customer._id, name: customer.name, email: customer.email, avatar: customer.avatar } });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Login
+app.post('/api/customer/login', authLimiter, async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const customer = await Customer.findOne({ email });
+    if (!customer) return res.status(400).json({ error: 'No account found with that email' });
+    const valid = await bcrypt.compare(password, customer.password);
+    if (!valid) return res.status(400).json({ error: 'Incorrect password' });
+    const token = jwt.sign({ id: customer._id, email, isCustomer: true }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ success: true, token, customer: { id: customer._id, name: customer.name, email: customer.email, avatar: customer.avatar, addresses: customer.addresses } });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Get profile
+app.get('/api/customer/profile', verifyCustomer, async (req, res) => {
+  try {
+    const c = await Customer.findById(req.customerId).select('-password');
+    if (!c) return res.status(404).json({ error: 'Customer not found' });
+    res.json(c);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Update profile
+app.put('/api/customer/profile', verifyCustomer, async (req, res) => {
+  const { name, phone, avatar } = req.body;
+  try {
+    const c = await Customer.findByIdAndUpdate(req.customerId, { name, phone, avatar }, { new: true }).select('-password');
+    res.json({ success: true, customer: c });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Change password
+app.put('/api/customer/password', verifyCustomer, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Both passwords required' });
+  if (newPassword.length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters' });
+  try {
+    const c = await Customer.findById(req.customerId);
+    const valid = await bcrypt.compare(currentPassword, c.password);
+    if (!valid) return res.status(400).json({ error: 'Current password is incorrect' });
+    c.password = await bcrypt.hash(newPassword, 10);
+    await c.save();
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Get customer orders
+app.get('/api/customer/orders', verifyCustomer, async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.customerId).select('email');
+    const orders = await Order.find({ email: customer.email }).sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Manage saved addresses
+app.get('/api/customer/addresses', verifyCustomer, async (req, res) => {
+  try {
+    const c = await Customer.findById(req.customerId).select('addresses');
+    res.json(c.addresses || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/customer/addresses', verifyCustomer, async (req, res) => {
+  const { label, line1, line2, city, country, isDefault } = req.body;
+  if (!line1 || !city) return res.status(400).json({ error: 'Address line and city required' });
+  try {
+    const c = await Customer.findById(req.customerId);
+    if (isDefault) c.addresses.forEach(a => { a.isDefault = false; });
+    c.addresses.push({ label: label || 'Home', line1, line2, city, country, isDefault: !!isDefault });
+    await c.save();
+    res.json({ success: true, addresses: c.addresses });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/customer/addresses/:idx', verifyCustomer, async (req, res) => {
+  try {
+    const c = await Customer.findById(req.customerId);
+    c.addresses.splice(parseInt(req.params.idx), 1);
+    await c.save();
+    res.json({ success: true, addresses: c.addresses });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Customer wishlist (server-side)
+app.get('/api/customer/wishlist', verifyCustomer, async (req, res) => {
+  try {
+    const c = await Customer.findById(req.customerId).populate('wishlist');
+    res.json(c.wishlist || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/customer/wishlist/:productId', verifyCustomer, async (req, res) => {
+  try {
+    const c = await Customer.findById(req.customerId);
+    const pid = req.params.productId;
+    const idx = c.wishlist.findIndex(w => w.toString() === pid);
+    if (idx > -1) { c.wishlist.splice(idx, 1); }
+    else { c.wishlist.push(pid); }
+    await c.save();
+    res.json({ success: true, inWishlist: idx === -1 });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─── VENDOR AUTHENTICATION ────────────────────────────────────────────────────
@@ -496,22 +663,47 @@ app.get('/api/vendors/:id', async (req, res) => {
 // ─── CHECKOUT ─────────────────────────────────────────────────────────────────
 
 app.post('/api/checkout', async (req, res) => {
-  const { items, email, name, shippingAddress } = req.body;
+  const { items, email, name, shippingAddress, customerToken } = req.body;
 
   if (!items || items.length === 0) {
     return res.status(400).json({ error: 'Cart is empty' });
   }
 
+  // Resolve customer ID if logged in
+  let resolvedCustomerId = null;
+  if (customerToken) {
+    try {
+      const decoded = jwt.verify(customerToken, JWT_SECRET);
+      if (decoded.isCustomer) resolvedCustomerId = decoded.id;
+    } catch (_) {}
+  }
+
   try {
     let total = 0;
-    items.forEach(item => {
-      total += item.price * item.quantity;
+    items.forEach(item => { total += item.price * item.quantity; });
+
+    // Create local order record immediately (Stripe session created below)
+    const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+    const platformFee = parseFloat((subtotal * 0.1).toFixed(2));
+    const vendorEarnings = parseFloat((subtotal - platformFee).toFixed(2));
+
+    const order = await Order.create({
+      orderId,
+      customerId: resolvedCustomerId || email,
+      items: items.map(i => ({ productId: i.productId, name: i.name, price: i.price, quantity: i.quantity, vendorId: i.vendorId })),
+      subtotal,
+      platformFee,
+      vendorEarnings,
+      email,
+      shippingAddress,
+      status: 'pending'
     });
 
     const lineItems = items.map(item => ({
       price_data: {
         currency: 'usd',
-        product_data: { name: `${item.name} (${item.vendorName})` },
+        product_data: { name: `${item.name}${item.vendorName ? ' (' + item.vendorName + ')' : ''}` },
         unit_amount: Math.round(item.price * 100)
       },
       quantity: item.quantity
@@ -521,13 +713,13 @@ app.post('/api/checkout', async (req, res) => {
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
-      success_url: `${process.env.DOMAIN || 'https://velocitymark.onrender.com'}/order-success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.DOMAIN || 'https://velocitymark.onrender.com'}/order-success?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
       cancel_url: `${process.env.DOMAIN || 'https://velocitymark.onrender.com'}/checkout`,
       customer_email: email,
-      metadata: { name, shippingAddress }
+      metadata: { name, shippingAddress, orderId }
     });
 
-    res.json({ sessionId: session.id, url: session.url });
+    res.json({ success: true, orderId, sessionId: session.id, url: session.url });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
