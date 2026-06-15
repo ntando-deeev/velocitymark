@@ -843,3 +843,19 @@ body.light-mode .footer-brand p, body.light-mode .footer-bottom p { color: #8888
   transition: border-color var(--transition);
 }
 .my-shop-product-card:hover { border-color: var(--accent); }
+
+/* ── VELOCITY VERIFIED BADGE ─────────────────────────────────────────────── */
+.vm-verified-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  vertical-align: middle; margin-left: 5px;
+  background: rgba(99,102,241,.12);
+  border: 1px solid rgba(99,102,241,.3);
+  border-radius: 50px; padding: 1px 7px 1px 3px;
+  font-size: .72rem; font-weight: 600; color: #6366f1;
+  white-space: nowrap; line-height: 1.4;
+  cursor: default;
+}
+.vm-badge-svg { flex-shrink: 0; display: block; }
+.vm-badge-label { letter-spacing: .02em; }
+/* Pulse animation on hover so it feels alive */
+.vm-verified-badge:hover { background: rgba(99,102,241,.2); }

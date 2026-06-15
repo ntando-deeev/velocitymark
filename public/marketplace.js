@@ -172,7 +172,7 @@ async function loadVendorContact(vid,targetId){
     if(v.contactEmail)links+=`<a href="mailto:${v.contactEmail}" class="contact-link">✉️ ${v.contactEmail}</a>`;
     if(v.website)links+=`<a href="${v.website}" target="_blank" class="contact-link">🌐 Website</a>`;
     if(v.location)links+=`<span class="contact-link">📍 ${v.location}</span>`;
-    el.innerHTML=links?`<div style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem">Seller: <strong style="color:var(--text)">${v.storeName||''}</strong></div><div class="contact-links">${links}</div>`:'';
+    el.innerHTML=links?`<div style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem">Seller: <strong style="color:var(--text)">${v.storeName||''}</strong>${v.verified?' '+velocityBadge('13'):''}</div><div class="contact-links">${links}</div>`:'';
   }catch(e){}
 }
 
@@ -214,10 +214,9 @@ async function loadVendors(){
       const av=v.image&&v.image.startsWith('http')?`<img src="${v.image}" alt="${v.storeName}" style="width:64px;height:64px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">`:`<span style="font-size:1.8rem">${v.image||'🏪'}</span>`;
       return `<div class="seller-card" onclick="openSellerStore('${v._id}')">
         <div class="seller-avatar">${av}</div>
-        <div class="seller-name">${v.storeName}</div>
+        <div class="seller-name">${v.storeName}${v.verified ? velocityBadge('15') : ''}</div>
         <div class="seller-category">${v.category||'General'}</div>
         <div class="seller-rating">★ ${v.rating||'5.0'} <span style="color:var(--text-muted)">(${v.reviews||0})</span></div>
-        ${v.verified?'<div class="seller-verified">✓ Verified Seller</div>':''}
         ${v.location?`<div style="font-size:.75rem;color:var(--text-muted);margin-top:.25rem">📍 ${v.location}</div>`:''}
       </div>`;
     }).join('');
@@ -246,7 +245,7 @@ async function openSellerStore(vid){
           <div style="width:64px;height:64px;border-radius:50%;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid var(--border-md);flex-shrink:0">${av}</div>
           <div>
             <h2 style="font-family:'Space Grotesk',sans-serif;font-size:1.5rem;margin-bottom:.2rem">${v.storeName}</h2>
-            <div style="color:var(--text-muted);font-size:.85rem">${v.category||'General'} · ★ ${v.rating||'5.0'} ${v.verified?'· <span style="color:#22c55e">✓ Verified</span>':''}</div>
+            <div style="color:var(--text-muted);font-size:.85rem">${v.category||'General'} · ★ ${v.rating||'5.0'} ${v.verified?'· '+velocityBadge('14'):''}</div>
           </div>
         </div>
         ${v.storeDesc?`<p style="color:var(--text-muted);font-size:.9rem;margin-bottom:1rem">${v.storeDesc}</p>`:''}
@@ -920,7 +919,23 @@ async function saveProductPaymentPlans(productId) {
   } catch (e) {}
 }
 
-// ── IMAGE UPLOAD (FREE + PREMIUM) ─────────────────────────────────────────────
+// ── VELOCITY VERIFIED BADGE ───────────────────────────────────────────────────
+// Inline SVG badge shown on all verified shops — free, automatic on registration
+function velocityBadge(size='18') {
+  return `<span class="vm-verified-badge" title="VelocityMark Verified Shop" aria-label="Verified">
+    <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="vm-badge-svg">
+      <path d="M12 2L14.5 8.5H21.5L16 13L18 20L12 16L6 20L8 13L2.5 8.5H9.5L12 2Z" fill="url(#vmGrad)" stroke="none"/>
+      <path d="M8.5 12.5L11 15L15.5 10" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <defs>
+        <linearGradient id="vmGrad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#6366f1"/>
+          <stop offset="100%" stop-color="#8b5cf6"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <span class="vm-badge-label">Verified</span>
+  </span>`;
+}
 
 async function uploadImageFile(file) {
   const fd = new FormData();
@@ -1015,7 +1030,7 @@ async function loadMyShop() {
       <div class="my-shop-header">
         <div class="my-shop-avatar">${avatar}</div>
         <div class="my-shop-meta">
-          <h2>${v.storeName || 'My Store'}</h2>
+          <h2>${v.storeName || 'My Store'}${v.verified ? ' ' + velocityBadge('18') : ''}</h2>
           <p style="color:var(--text-muted);margin:.3rem 0">${v.storeDesc || 'No description yet — add one in Profile.'}</p>
           <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem">
             ${v.category ? `<span class="pill">${v.category}</span>` : ''}

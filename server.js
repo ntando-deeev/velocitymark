@@ -252,7 +252,8 @@ app.post('/api/vendor/register', async (req, res) => {
       storeName,
       storeDesc,
       category,
-      image: '🏪'
+      image: '🏪',
+      verified: true   // All new shops are automatically verified on VelocityMark
     });
 
     const token = jwt.sign({ id: vendor._id, email }, JWT_SECRET, { expiresIn: '30d' });
